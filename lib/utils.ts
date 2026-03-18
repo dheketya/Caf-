@@ -7,19 +7,32 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatCurrency(amount: number, currency: string = 'USD'): string {
   if (currency === 'KHR') {
-    // KHR typically shown without decimals
-    return new Intl.NumberFormat('km-KH', {
-      style: 'currency',
-      currency: 'KHR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
+    // Manual format to avoid server/client hydration mismatch with km-KH locale
+    return `${Math.round(amount).toLocaleString('en-US')}៛`
   }
 
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
   }).format(amount)
+}
+
+/**
+ * Format amount in both USD and KHR
+ * @param amountUsd - amount in USD (base currency)
+ * @param exchangeRate - USD to KHR rate (e.g. 4100)
+ */
+export function formatDualCurrency(amountUsd: number, exchangeRate: number): string {
+  const usd = formatCurrency(amountUsd, 'USD')
+  const khr = formatCurrency(Math.round(amountUsd * exchangeRate), 'KHR')
+  return `${usd} / ${khr}`
+}
+
+/**
+ * Format KHR equivalent as a secondary display
+ */
+export function toKHR(amountUsd: number, exchangeRate: number): string {
+  return formatCurrency(Math.round(amountUsd * exchangeRate), 'KHR')
 }
 
 export function formatDate(date: Date | string): string {

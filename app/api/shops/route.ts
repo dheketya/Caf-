@@ -11,6 +11,8 @@ const updateShopSchema = z.object({
   timezone: z.string().optional(),
   logo: z.string().optional(),
   brandColor: z.string().optional(),
+  sugarLevels: z.array(z.string()).optional(),
+  exchangeRate: z.number().positive().optional(),
 })
 
 export async function PATCH(request: NextRequest) {

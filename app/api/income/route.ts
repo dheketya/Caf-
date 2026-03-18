@@ -13,6 +13,7 @@ const entrySchema = z.object({
   vendorName: z.string().optional(),
   note: z.string().optional(),
   date: z.string(),
+  paymentMethod: z.enum(['CASH', 'QR_EWALLET', 'SPLIT']).optional(),
 })
 
 export async function GET(request: NextRequest) {

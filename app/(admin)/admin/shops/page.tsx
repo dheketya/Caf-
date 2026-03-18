@@ -32,6 +32,7 @@ export default function AdminShopsPage() {
   const [quotaValue, setQuotaValue] = useState('')
   const [quotaNote, setQuotaNote] = useState('')
   const [approving, setApproving] = useState<string | null>(null)
+  const [confirmAction, setConfirmAction] = useState<{ shopId: string; shopName: string; planName: string; action: 'approve' | 'reject' } | null>(null)
   const [showResetModal, setShowResetModal] = useState(false)
   const [resetUser, setResetUser] = useState<{ id: string; name: string; email: string; shopName: string } | null>(null)
   const [newPassword, setNewPassword] = useState('')
@@ -71,14 +72,25 @@ export default function AdminShopsPage() {
     loadShops()
   }
 
-  async function handleApproval(shopId: string, action: 'approve' | 'reject') {
-    setApproving(shopId)
+  function requestApproval(shop: ShopData, action: 'approve' | 'reject') {
+    setConfirmAction({
+      shopId: shop.id,
+      shopName: shop.name,
+      planName: shop.requestedPackage?.name || 'Unknown',
+      action,
+    })
+  }
+
+  async function executeApproval() {
+    if (!confirmAction) return
+    setApproving(confirmAction.shopId)
     await fetch('/api/admin/shops/approve', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ shopId, action }),
+      body: JSON.stringify({ shopId: confirmAction.shopId, action: confirmAction.action }),
     })
     setApproving(null)
+    setConfirmAction(null)
     loadShops()
   }
 
@@ -156,7 +168,7 @@ export default function AdminShopsPage() {
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        onClick={() => handleApproval(shop.id, 'approve')}
+                        onClick={() => requestApproval(shop, 'approve')}
                         disabled={approving === shop.id}
                       >
                         <Check className="h-4 w-4 mr-1" /> Approve
@@ -164,7 +176,7 @@ export default function AdminShopsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleApproval(shop.id, 'reject')}
+                        onClick={() => requestApproval(shop, 'reject')}
                         disabled={approving === shop.id}
                         className="text-red-600 border-red-200 hover:bg-red-50"
                       >
@@ -311,6 +323,35 @@ export default function AdminShopsPage() {
               </Button>
             )}
           </form>
+        )}
+      </Modal>
+
+      {/* Approve/Reject Confirmation Modal */}
+      <Modal isOpen={!!confirmAction} onClose={() => setConfirmAction(null)} title={confirmAction?.action === 'approve' ? 'Confirm Approval' : 'Confirm Rejection'}>
+        {confirmAction && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              {confirmAction.action === 'approve' ? (
+                <>Are you sure you want to <strong className="text-green-700">approve</strong> the upgrade to <strong>{confirmAction.planName}</strong> for <strong>{confirmAction.shopName}</strong>? The shop will be moved to the new plan immediately.</>
+              ) : (
+                <>Are you sure you want to <strong className="text-red-600">reject</strong> the upgrade to <strong>{confirmAction.planName}</strong> for <strong>{confirmAction.shopName}</strong>? The shop will remain on its current plan.</>
+              )}
+            </p>
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setConfirmAction(null)}>
+                Cancel
+              </Button>
+              {confirmAction.action === 'approve' ? (
+                <Button className="flex-1" onClick={executeApproval} disabled={approving === confirmAction.shopId}>
+                  {approving ? 'Processing...' : 'Yes, Approve'}
+                </Button>
+              ) : (
+                <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={executeApproval} disabled={approving === confirmAction.shopId}>
+                  {approving ? 'Processing...' : 'Yes, Reject'}
+                </Button>
+              )}
+            </div>
+          </div>
         )}
       </Modal>
     </div>

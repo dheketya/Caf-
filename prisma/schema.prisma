@@ -120,9 +120,11 @@ model Shop {
   address     String?
   phone       String?
   currency    String     @default("USD")
+  exchangeRate Float     @default(4100) @map("exchange_rate") // USD to KHR rate
   timezone    String     @default("Asia/Phnom_Penh")
   status      ShopStatus @default(ACTIVE)
   billingCycle String    @default("monthly") @map("billing_cycle") // "monthly" | "annual"
+  sugarLevels Json?     @map("sugar_levels") // ["0%", "10%", "25%", "50%", "100%"]
 
   packageId   String     @map("package_id")
   package     Package    @relation(fields: [packageId], references: [id])
@@ -231,6 +233,8 @@ model Product {
   isActive    Boolean  @default(true) @map("is_active")
   isOutOfStock Boolean @default(false) @map("is_out_of_stock")
   sortOrder   Int      @default(0) @map("sort_order")
+  hasSugarLevel Boolean @default(false) @map("has_sugar_level")
+  sizes       Json?    // [{name:"S",price:2.50},{name:"M",price:3.00},{name:"L",price:null}] null=unavailable
 
   categoryId  String?  @map("category_id")
   category    Category? @relation(fields: [categoryId], references: [id])
@@ -336,6 +340,8 @@ model OrderItem {
   unitPrice Float    @map("unit_price")
   total     Float
   notes     String?
+  sizeName  String?  @map("size_name")
+  sugarLevel String? @map("sugar_level")
 
   orderId   String   @map("order_id")
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -437,6 +443,7 @@ model FinanceEntry {
   receiptUrl      String?         @map("receipt_url")
   date            DateTime
   approvalStatus  ApprovalStatus  @default(APPROVED) @map("approval_status")
+  paymentMethod   String?         @map("payment_method") // CASH, QR_EWALLET, SPLIT
 
   shopId          String          @map("shop_id")
   shop            Shop            @relation(fields: [shopId], references: [id])

@@ -11,6 +11,9 @@ const createOrderSchema = z.object({
     z.object({
       productId: z.string(),
       quantity: z.number().int().positive(),
+      unitPrice: z.number().optional(),
+      sizeName: z.string().optional(),
+      sugarLevel: z.string().optional(),
       notes: z.string().optional(),
       modifierIds: z.array(z.string()).optional(),
     })
@@ -78,7 +81,9 @@ export async function POST(request: NextRequest) {
       const product = productMap.get(item.productId)
       if (!product) throw new Error(`Product ${item.productId} not found`)
 
-      let itemTotal = product.price * item.quantity
+      // Use provided unitPrice (from size selection) or fall back to product price
+      const unitPrice = item.unitPrice ?? product.price
+      let itemTotal = unitPrice * item.quantity
 
       // Calculate modifier prices
       const modifierDetails: { modifierId: string; priceAdjustment: number }[] = []
@@ -102,9 +107,11 @@ export async function POST(request: NextRequest) {
       return {
         productId: item.productId,
         quantity: item.quantity,
-        unitPrice: product.price,
+        unitPrice,
         total: itemTotal,
         notes: item.notes,
+        sizeName: item.sizeName,
+        sugarLevel: item.sugarLevel,
         modifiers: modifierDetails,
       }
     })
@@ -156,6 +163,8 @@ export async function POST(request: NextRequest) {
             unitPrice: item.unitPrice,
             total: item.total,
             notes: item.notes,
+            sizeName: item.sizeName,
+            sugarLevel: item.sugarLevel,
             modifiers: {
               create: item.modifiers.map((m) => ({
                 modifierId: m.modifierId,
@@ -198,6 +207,7 @@ export async function POST(request: NextRequest) {
         type: 'INCOME',
         amount: total,
         category: 'Sales',
+        paymentMethod: data.paymentMethod,
         date: new Date(),
         shopId: user.shopId,
         createdById: user.id,

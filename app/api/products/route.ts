@@ -14,6 +14,11 @@ const productSchema = z.object({
   categoryId: z.string().optional(),
   isActive: z.boolean().optional(),
   isOutOfStock: z.boolean().optional(),
+  hasSugarLevel: z.boolean().optional(),
+  sizes: z.array(z.object({
+    name: z.string(),
+    price: z.number().nullable(),
+  })).optional(),
 })
 
 export async function GET() {
@@ -25,16 +30,7 @@ export async function GET() {
 
   const products = await prisma.product.findMany({
     where: { shopId: user.shopId, isActive: true },
-    include: {
-      category: true,
-      modifierGroups: {
-        include: {
-          modifierGroup: {
-            include: { modifiers: { orderBy: { createdAt: 'asc' } } },
-          },
-        },
-      },
-    },
+    include: { category: true },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
   })
 
@@ -55,7 +51,10 @@ export async function POST(request: NextRequest) {
     const data = productSchema.parse(body)
 
     const product = await prisma.product.create({
-      data: { ...data, shopId: user.shopId },
+      data: {
+        ...data,
+        shopId: user.shopId,
+      },
       include: { category: true },
     })
 
@@ -66,4 +65,52 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+}
+
+export async function PATCH(request: NextRequest) {
+  const auth = await requireAuth()
+  if ('error' in auth) return auth.error
+
+  const { user } = auth
+  if (!user.shopId || !hasModuleAccess(user.role as Role, 'products')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  try {
+    const body = await request.json()
+    const { id, ...updates } = body
+    if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+
+    const product = await prisma.product.update({
+      where: { id },
+      data: updates,
+      include: { category: true },
+    })
+
+    return NextResponse.json(product)
+  } catch (error) {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const auth = await requireAuth()
+  if ('error' in auth) return auth.error
+
+  const { user } = auth
+  if (!user.shopId || !hasModuleAccess(user.role as Role, 'products')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
+  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+
+  // Soft delete — mark as inactive
+  await prisma.product.update({
+    where: { id },
+    data: { isActive: false },
+  })
+
+  return NextResponse.json({ success: true })
 }

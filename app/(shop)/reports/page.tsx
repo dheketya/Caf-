@@ -3,19 +3,39 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { formatCurrency } from '@/lib/utils'
-import { BarChart3, ShoppingCart, Package, Users } from 'lucide-react'
+import { formatCurrency, toKHR } from '@/lib/utils'
+import { BarChart3, ShoppingCart, Package, Banknote, QrCode, ArrowLeftRight } from 'lucide-react'
+
+const PAYMENT_LABELS: Record<string, string> = {
+  CASH: 'Cash',
+  QR_EWALLET: 'Bank Transfer',
+  SPLIT: 'Cash + Bank',
+}
+
+interface PaymentBreakdown {
+  method: string
+  count: number
+  revenue: number
+}
 
 interface SalesReport {
   totalSales: number
   totalRevenue: number
   avgOrderValue: number
   topProducts: { name: string; count: number; revenue: number }[]
+  paymentBreakdown: PaymentBreakdown[]
 }
 
 export default function ReportsPage() {
   const [report, setReport] = useState<SalesReport | null>(null)
   const [loading, setLoading] = useState(true)
+  const [exchangeRate, setExchangeRate] = useState(4100)
+
+  useEffect(() => {
+    fetch('/api/shops/me').then((r) => r.json()).then((shop) => {
+      if (shop && !shop.error) setExchangeRate(shop.exchangeRate || 4100)
+    })
+  }, [])
 
   useEffect(() => {
     fetch('/api/orders?today=true')
@@ -41,7 +61,20 @@ export default function ReportsPage() {
           .sort((a, b) => b.revenue - a.revenue)
           .slice(0, 5)
 
-        setReport({ totalSales, totalRevenue, avgOrderValue, topProducts })
+        // Payment breakdown
+        const paymentMap = new Map<string, { count: number; revenue: number }>()
+        for (const order of orders) {
+          const method = order.paymentMethod || 'OTHER'
+          const existing = paymentMap.get(method) || { count: 0, revenue: 0 }
+          existing.count++
+          existing.revenue += order.total
+          paymentMap.set(method, existing)
+        }
+        const paymentBreakdown = [...paymentMap.entries()]
+          .map(([method, data]) => ({ method, ...data }))
+          .sort((a, b) => b.revenue - a.revenue)
+
+        setReport({ totalSales, totalRevenue, avgOrderValue, topProducts, paymentBreakdown })
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -78,6 +111,7 @@ export default function ReportsPage() {
             <div>
               <p className="text-sm text-gray-500">Total Revenue</p>
               <p className="text-2xl font-bold text-gray-900">{formatCurrency(report?.totalRevenue || 0)}</p>
+              <p className="text-xs text-gray-400">{toKHR(report?.totalRevenue || 0, exchangeRate)}</p>
             </div>
           </CardContent>
         </Card>
@@ -89,6 +123,7 @@ export default function ReportsPage() {
             <div>
               <p className="text-sm text-gray-500">Avg Order Value</p>
               <p className="text-2xl font-bold text-gray-900">{formatCurrency(report?.avgOrderValue || 0)}</p>
+              <p className="text-xs text-gray-400">{toKHR(report?.avgOrderValue || 0, exchangeRate)}</p>
             </div>
           </CardContent>
         </Card>
@@ -112,10 +147,62 @@ export default function ReportsPage() {
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="text-sm text-gray-500">{product.count} sold</span>
-                    <span className="text-sm font-medium text-gray-900">{formatCurrency(product.revenue)}</span>
+                    <div className="text-right">
+                      <span className="text-sm font-medium text-gray-900">{formatCurrency(product.revenue)}</span>
+                      <p className="text-[11px] text-gray-400">{toKHR(product.revenue, exchangeRate)}</p>
+                    </div>
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Payment Breakdown */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Payment Methods</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {report?.paymentBreakdown.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-4">No sales yet today</p>
+          ) : (
+            <div className="space-y-3">
+              {report?.paymentBreakdown.map((pm) => {
+                const pct = report.totalRevenue > 0 ? Math.round((pm.revenue / report.totalRevenue) * 100) : 0
+                const icons: Record<string, React.ReactNode> = {
+                  CASH: <Banknote className="h-4 w-4 text-green-600" />,
+                  QR_EWALLET: <QrCode className="h-4 w-4 text-blue-600" />,
+                  SPLIT: <ArrowLeftRight className="h-4 w-4 text-purple-600" />,
+                }
+                return (
+                  <div key={pm.method}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        {icons[pm.method] || <Banknote className="h-4 w-4 text-gray-400" />}
+                        <span className="text-sm font-medium text-gray-900">
+                          {PAYMENT_LABELS[pm.method] || pm.method}
+                        </span>
+                        <span className="text-xs text-gray-400">{pm.count} orders</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <span className="text-sm font-medium text-gray-900">{formatCurrency(pm.revenue)}</span>
+                          <p className="text-[11px] text-gray-400">{toKHR(pm.revenue, exchangeRate)}</p>
+                        </div>
+                        <span className="text-xs text-gray-400 w-8 text-right">{pct}%</span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-brand-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </CardContent>

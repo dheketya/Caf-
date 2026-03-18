@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Upload, Image as ImageIcon } from 'lucide-react'
+import { Upload, Image as ImageIcon, Plus, X } from 'lucide-react'
 
 export default function SettingsPage() {
   const [form, setForm] = useState({
@@ -12,10 +12,13 @@ export default function SettingsPage() {
     phone: '',
     address: '',
     currency: 'USD',
+    exchangeRate: '4100',
     timezone: 'Asia/Phnom_Penh',
     brandColor: '#e85d3a',
     logo: '',
+    sugarLevels: ['0%', '25%', '50%', '75%', '100%'] as string[],
   })
+  const [newSugarLevel, setNewSugarLevel] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
@@ -31,9 +34,11 @@ export default function SettingsPage() {
             phone: shop.phone || '',
             address: shop.address || '',
             currency: shop.currency || 'USD',
+            exchangeRate: (shop.exchangeRate || 4100).toString(),
             timezone: shop.timezone || 'Asia/Phnom_Penh',
             brandColor: shop.brandColor || '#e85d3a',
             logo: shop.logo || '',
+            sugarLevels: (shop.sugarLevels as string[]) || ['0%', '25%', '50%', '75%', '100%'],
           })
           if (shop.logo) setLogoPreview(shop.logo)
         }
@@ -63,7 +68,10 @@ export default function SettingsPage() {
     const res = await fetch('/api/shops', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        ...form,
+        exchangeRate: parseFloat(form.exchangeRate) || 4100,
+      }),
     })
 
     setSaving(false)
@@ -161,16 +169,27 @@ export default function SettingsPage() {
               onChange={(e) => setForm({ ...form, address: e.target.value })}
             />
 
+            {/* Exchange Rate */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-              <select
-                value={form.currency}
-                onChange={(e) => setForm({ ...form, currency: e.target.value })}
-                className="flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
-              >
-                <option value="USD">USD - US Dollar</option>
-                <option value="KHR">KHR - Cambodian Riel</option>
-              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Exchange Rate (1 USD = ? KHR)
+              </label>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="text-sm font-medium text-gray-500 whitespace-nowrap">$1 =</span>
+                  <Input
+                    type="number"
+                    value={form.exchangeRate}
+                    onChange={(e) => setForm({ ...form, exchangeRate: e.target.value })}
+                    placeholder="4100"
+                    className="w-32"
+                  />
+                  <span className="text-sm font-medium text-gray-500">KHR</span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Used to show prices in both USD and KHR. Example: $1.00 = {parseInt(form.exchangeRate || '4100').toLocaleString()}៛
+              </p>
             </div>
 
             <div>
@@ -186,6 +205,56 @@ export default function SettingsPage() {
                 <option value="Asia/Singapore">Asia/Singapore (UTC+8)</option>
                 <option value="America/New_York">America/New_York (UTC-5)</option>
               </select>
+            </div>
+
+            {/* Sugar Levels */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Sugar Levels</label>
+              <p className="text-xs text-gray-400 mb-2">Define the sugar options available for your drinks</p>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {form.sugarLevels.map((level, i) => (
+                  <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 text-sm text-gray-700">
+                    {level}
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, sugarLevels: f.sugarLevels.filter((_, idx) => idx !== i) }))}
+                      className="text-gray-400 hover:text-red-500"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={newSugarLevel}
+                  onChange={(e) => setNewSugarLevel(e.target.value)}
+                  placeholder="e.g. 10%"
+                  className="w-32"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      if (newSugarLevel.trim() && !form.sugarLevels.includes(newSugarLevel.trim())) {
+                        setForm((f) => ({ ...f, sugarLevels: [...f.sugarLevels, newSugarLevel.trim()] }))
+                        setNewSugarLevel('')
+                      }
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (newSugarLevel.trim() && !form.sugarLevels.includes(newSugarLevel.trim())) {
+                      setForm((f) => ({ ...f, sugarLevels: [...f.sugarLevels, newSugarLevel.trim()] }))
+                      setNewSugarLevel('')
+                    }
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             <div className="flex items-center gap-3">

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency, formatDate, toKHR } from '@/lib/utils'
 import { Plus, TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
 
 interface FinanceEntry {
@@ -17,9 +17,16 @@ interface FinanceEntry {
   expenseCategory: string | null
   vendorName: string | null
   note: string | null
+  paymentMethod: string | null
   date: string
   approvalStatus: string
   createdBy: { name: string }
+}
+
+const PAYMENT_LABELS: Record<string, string> = {
+  CASH: 'Cash',
+  QR_EWALLET: 'Bank Transfer',
+  SPLIT: 'Cash + Bank',
 }
 
 export default function IncomePage() {
@@ -37,7 +44,16 @@ export default function IncomePage() {
     vendorName: '',
     note: '',
     date: new Date().toISOString().split('T')[0],
+    paymentMethod: '',
   })
+
+  const [exchangeRate, setExchangeRate] = useState(4100)
+
+  useEffect(() => {
+    fetch('/api/shops/me').then((r) => r.json()).then((shop) => {
+      if (shop && !shop.error) setExchangeRate(shop.exchangeRate || 4100)
+    })
+  }, [])
 
   useEffect(() => {
     loadEntries()
@@ -64,10 +80,11 @@ export default function IncomePage() {
         ...form,
         amount: parseFloat(form.amount),
         expenseCategory: form.type === 'EXPENSE' ? form.expenseCategory : undefined,
+        paymentMethod: form.paymentMethod || undefined,
       }),
     })
     setShowModal(false)
-    setForm({ type: 'INCOME', amount: '', category: '', expenseCategory: '', vendorName: '', note: '', date: new Date().toISOString().split('T')[0] })
+    setForm({ type: 'INCOME', amount: '', category: '', expenseCategory: '', vendorName: '', note: '', date: new Date().toISOString().split('T')[0], paymentMethod: '' })
     loadEntries()
     setLoading(false)
   }
@@ -104,6 +121,7 @@ export default function IncomePage() {
             <div>
               <p className="text-sm text-gray-500">Total Income</p>
               <p className="text-xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
+              <p className="text-xs text-gray-400">{toKHR(totalIncome, exchangeRate)}</p>
             </div>
           </CardContent>
         </Card>
@@ -115,6 +133,7 @@ export default function IncomePage() {
             <div>
               <p className="text-sm text-gray-500">Total Expenses</p>
               <p className="text-xl font-bold text-red-600">{formatCurrency(totalExpense)}</p>
+              <p className="text-xs text-gray-400">{toKHR(totalExpense, exchangeRate)}</p>
             </div>
           </CardContent>
         </Card>
@@ -128,6 +147,7 @@ export default function IncomePage() {
               <p className={`text-xl font-bold ${totalIncome - totalExpense >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {formatCurrency(totalIncome - totalExpense)}
               </p>
+              <p className="text-xs text-gray-400">{toKHR(totalIncome - totalExpense, exchangeRate)}</p>
             </div>
           </CardContent>
         </Card>
@@ -152,6 +172,7 @@ export default function IncomePage() {
               <th className="text-left py-3 px-4 font-medium text-gray-500">Date</th>
               <th className="text-left py-3 px-4 font-medium text-gray-500">Type</th>
               <th className="text-left py-3 px-4 font-medium text-gray-500">Category</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">Payment</th>
               <th className="text-left py-3 px-4 font-medium text-gray-500">Note</th>
               <th className="text-right py-3 px-4 font-medium text-gray-500">Amount</th>
               <th className="text-right py-3 px-4 font-medium text-gray-500">Status</th>
@@ -167,9 +188,15 @@ export default function IncomePage() {
                   </Badge>
                 </td>
                 <td className="py-3 px-4 text-gray-600">{entry.expenseCategory || entry.category || '—'}</td>
+                <td className="py-3 px-4 text-gray-600 text-sm">
+                  {entry.paymentMethod ? PAYMENT_LABELS[entry.paymentMethod] || entry.paymentMethod : '—'}
+                </td>
                 <td className="py-3 px-4 text-gray-600 truncate max-w-[200px]">{entry.note || '—'}</td>
-                <td className={`py-3 px-4 text-right font-medium ${entry.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}>
-                  {entry.type === 'INCOME' ? '+' : '-'}{formatCurrency(entry.amount)}
+                <td className="py-3 px-4 text-right">
+                  <p className={`font-medium ${entry.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}>
+                    {entry.type === 'INCOME' ? '+' : '-'}{formatCurrency(entry.amount)}
+                  </p>
+                  <p className="text-[11px] text-gray-400">{toKHR(entry.amount, exchangeRate)}</p>
                 </td>
                 <td className="py-3 px-4 text-right">
                   <Badge variant={entry.approvalStatus === 'APPROVED' ? 'success' : entry.approvalStatus === 'PENDING' ? 'warning' : 'danger'}>
@@ -212,6 +239,15 @@ export default function IncomePage() {
           {form.type === 'INCOME' && (
             <Input label="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="e.g. Catering, Events" />
           )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+            <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} className="flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">
+              <option value="">Not specified</option>
+              <option value="CASH">Cash</option>
+              <option value="QR_EWALLET">Bank Transfer</option>
+              <option value="SPLIT">Cash + Bank Transfer</option>
+            </select>
+          </div>
           <Input label="Note" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
           <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
         </form>
