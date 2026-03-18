@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Upload, Image as ImageIcon, Plus, X } from 'lucide-react'
 
 export default function SettingsPage() {
+  const router = useRouter()
   const [form, setForm] = useState({
     name: '',
     phone: '',
@@ -17,6 +19,10 @@ export default function SettingsPage() {
     brandColor: '#e85d3a',
     logo: '',
     sugarLevels: ['0%', '25%', '50%', '75%', '100%'] as string[],
+    loyaltyEnabled: false,
+    loyaltyTarget: '10',
+    loyaltyDiscountType: 'percentage',
+    loyaltyDiscountValue: '10',
   })
   const [newSugarLevel, setNewSugarLevel] = useState('')
   const [saving, setSaving] = useState(false)
@@ -39,6 +45,10 @@ export default function SettingsPage() {
             brandColor: shop.brandColor || '#e85d3a',
             logo: shop.logo || '',
             sugarLevels: (shop.sugarLevels as string[]) || ['0%', '25%', '50%', '75%', '100%'],
+            loyaltyEnabled: shop.loyaltyEnabled ?? false,
+            loyaltyTarget: (shop.loyaltyTarget || 10).toString(),
+            loyaltyDiscountType: shop.loyaltyDiscountType || 'percentage',
+            loyaltyDiscountValue: (shop.loyaltyDiscountValue || 10).toString(),
           })
           if (shop.logo) setLogoPreview(shop.logo)
         }
@@ -65,18 +75,32 @@ export default function SettingsPage() {
     setSaving(true)
     setSaved(false)
 
+    const payload = {
+      name: form.name,
+      phone: form.phone,
+      address: form.address,
+      currency: form.currency,
+      timezone: form.timezone,
+      brandColor: form.brandColor,
+      logo: form.logo,
+      sugarLevels: form.sugarLevels,
+      exchangeRate: parseFloat(form.exchangeRate) || 4100,
+      loyaltyEnabled: form.loyaltyEnabled,
+      loyaltyTarget: parseInt(form.loyaltyTarget) || 10,
+      loyaltyDiscountType: form.loyaltyDiscountType,
+      loyaltyDiscountValue: parseFloat(form.loyaltyDiscountValue) || 0,
+    }
+
     const res = await fetch('/api/shops', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...form,
-        exchangeRate: parseFloat(form.exchangeRate) || 4100,
-      }),
+      body: JSON.stringify(payload),
     })
 
     setSaving(false)
     if (res.ok) {
       setSaved(true)
+      router.refresh() // refresh layout to update sidebar logo/name
       setTimeout(() => setSaved(false), 3000)
     }
   }
@@ -255,6 +279,78 @@ export default function SettingsPage() {
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
+            </div>
+
+            {/* Loyalty Program */}
+            <div className="rounded-xl border border-gray-200 overflow-hidden">
+              <label className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.loyaltyEnabled}
+                  onChange={(e) => setForm({ ...form, loyaltyEnabled: e.target.checked })}
+                  className="rounded border-gray-300 h-4 w-4"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Loyalty Program</p>
+                  <p className="text-xs text-gray-400">Reward returning customers with a discount after reaching visit target</p>
+                </div>
+              </label>
+
+              {form.loyaltyEnabled && (
+                <div className="border-t border-gray-100 px-4 py-4 space-y-4 bg-gray-50">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Visits needed for reward</label>
+                    <Input
+                      type="number"
+                      value={form.loyaltyTarget}
+                      onChange={(e) => setForm({ ...form, loyaltyTarget: e.target.value })}
+                      placeholder="10"
+                      className="w-32"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Customer gets a discount after this many orders</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Discount type</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, loyaltyDiscountType: 'percentage' })}
+                        className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${form.loyaltyDiscountType === 'percentage' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                      >
+                        Percentage (%)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, loyaltyDiscountType: 'fixed' })}
+                        className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${form.loyaltyDiscountType === 'fixed' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                      >
+                        Fixed Amount ($)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Discount value {form.loyaltyDiscountType === 'percentage' ? '(%)' : '($)'}
+                    </label>
+                    <Input
+                      type="number"
+                      step={form.loyaltyDiscountType === 'percentage' ? '1' : '0.01'}
+                      value={form.loyaltyDiscountValue}
+                      onChange={(e) => setForm({ ...form, loyaltyDiscountValue: e.target.value })}
+                      placeholder={form.loyaltyDiscountType === 'percentage' ? '10' : '2.00'}
+                      className="w-32"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      {form.loyaltyDiscountType === 'percentage'
+                        ? `Customer gets ${form.loyaltyDiscountValue || '0'}% off their order`
+                        : `Customer gets $${form.loyaltyDiscountValue || '0'} off their order`
+                      }
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-3">

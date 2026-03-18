@@ -20,6 +20,8 @@ interface Product {
   isOutOfStock: boolean
   hasSugarLevel: boolean
   sizes: { name: string; price: number | null }[] | null
+  discountType: string | null
+  discountValue: number | null
   category: { id: string; name: string } | null
 }
 
@@ -58,6 +60,9 @@ export default function ProductsPage() {
     hasSugarLevel: false,
     hasSize: false,
     sizes: DEFAULT_SIZES as SizeEntry[],
+    hasDiscount: false,
+    discountType: 'percentage' as string,
+    discountValue: '',
   })
 
   const [categoryForm, setCategoryForm] = useState({ name: '', color: '#6366f1' })
@@ -79,6 +84,7 @@ export default function ProductsPage() {
     setForm({
       name: '', description: '', price: '', sku: '', categoryId: '',
       hasSugarLevel: false, hasSize: false, sizes: DEFAULT_SIZES.map((s) => ({ ...s })),
+      hasDiscount: false, discountType: 'percentage', discountValue: '',
     })
   }
 
@@ -101,6 +107,9 @@ export default function ProductsPage() {
       sizes: productSizes.length > 0
         ? productSizes.map((s) => ({ name: s.name, price: s.price !== null ? s.price.toString() : '' }))
         : DEFAULT_SIZES.map((s) => ({ ...s })),
+      hasDiscount: !!product.discountType,
+      discountType: product.discountType || 'percentage',
+      discountValue: product.discountValue?.toString() || '',
     })
     setShowProductModal(true)
   }
@@ -121,6 +130,8 @@ export default function ProductsPage() {
       categoryId: form.categoryId || undefined,
       hasSugarLevel: form.hasSugarLevel,
       sizes,
+      discountType: form.hasDiscount ? form.discountType : null,
+      discountValue: form.hasDiscount && form.discountValue ? parseFloat(form.discountValue) : null,
     }
 
     if (editingId) {
@@ -252,6 +263,11 @@ export default function ProductsPage() {
                     <div className="flex gap-1.5 mt-1">
                       {product.hasSugarLevel && <Badge variant="info" className="text-[10px]">Sugar</Badge>}
                       {availableSizes.length > 0 && <Badge variant="default" className="text-[10px]">Sizes</Badge>}
+                      {product.discountType && (
+                        <Badge variant="success" className="text-[10px]">
+                          {product.discountType === 'percentage' ? `${product.discountValue}% off` : `$${product.discountValue} off`}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   {/* Actions */}
@@ -333,6 +349,45 @@ export default function ProductsPage() {
                   </div>
                 ))}
                 <button type="button" onClick={addSizeRow} className="text-xs text-brand-600 hover:text-brand-700 font-medium">+ Add size</button>
+              </div>
+            )}
+          </div>
+
+          {/* Product Discount */}
+          <div className="rounded-xl border border-gray-200 overflow-hidden">
+            <label className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer">
+              <input type="checkbox" checked={form.hasDiscount} onChange={(e) => setForm({ ...form, hasDiscount: e.target.checked })} className="rounded border-gray-300 h-4 w-4" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Product Discount</p>
+                <p className="text-xs text-gray-400">Apply a special discount to this product</p>
+              </div>
+            </label>
+            {form.hasDiscount && (
+              <div className="border-t border-gray-100 px-4 py-3 space-y-3 bg-gray-50">
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setForm({ ...form, discountType: 'percentage' })} className={`px-3 py-1.5 rounded-lg border-2 text-xs font-medium ${form.discountType === 'percentage' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-600'}`}>
+                    Percentage (%)
+                  </button>
+                  <button type="button" onClick={() => setForm({ ...form, discountType: 'fixed' })} className={`px-3 py-1.5 rounded-lg border-2 text-xs font-medium ${form.discountType === 'fixed' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-600'}`}>
+                    Fixed ($)
+                  </button>
+                </div>
+                <Input
+                  type="number"
+                  step={form.discountType === 'percentage' ? '1' : '0.01'}
+                  value={form.discountValue}
+                  onChange={(e) => setForm({ ...form, discountValue: e.target.value })}
+                  placeholder={form.discountType === 'percentage' ? 'e.g. 20' : 'e.g. 1.00'}
+                  className="w-32"
+                />
+                {form.discountValue && form.price && (
+                  <p className="text-xs text-green-600">
+                    {form.discountType === 'percentage'
+                      ? `${form.discountValue}% off → $${(parseFloat(form.price) * (1 - parseFloat(form.discountValue) / 100)).toFixed(2)}`
+                      : `$${form.discountValue} off → $${(parseFloat(form.price) - parseFloat(form.discountValue)).toFixed(2)}`
+                    }
+                  </p>
+                )}
               </div>
             )}
           </div>

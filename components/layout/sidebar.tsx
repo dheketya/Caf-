@@ -16,6 +16,7 @@ import {
   UtensilsCrossed,
   Coffee,
   Lock,
+  UserCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -32,6 +33,7 @@ const shopNavItems: NavItem[] = [
   { label: 'Products', href: '/products', icon: <Package className="h-5 w-5" />, module: 'products' },
   { label: 'Stock', href: '/stock', icon: <Warehouse className="h-5 w-5" />, module: 'stock' },
   { label: 'Income & Expense', href: '/income', icon: <DollarSign className="h-5 w-5" />, module: 'income' },
+  { label: 'Customers', href: '/customers', icon: <UserCheck className="h-5 w-5" /> },
   { label: 'Reports', href: '/reports', icon: <BarChart3 className="h-5 w-5" />, module: 'reports' },
   { label: 'Users', href: '/users', icon: <Users className="h-5 w-5" />, module: 'users' },
   { label: 'Billing', href: '/billing', icon: <CreditCard className="h-5 w-5" />, module: 'billing' },
@@ -60,17 +62,19 @@ export function Sidebar({ role, shopName, shopLogo, brandColor, isQuotaBlocked }
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-white border-r border-gray-200 flex flex-col">
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-100">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
         {shopLogo ? (
-          <img src={shopLogo} alt="Logo" className="h-9 w-9 rounded-lg object-cover" />
+          <img src={shopLogo} alt="Logo" className="h-10 w-10 rounded-xl object-cover shadow-sm" />
         ) : (
-          <Coffee className="h-7 w-7" style={brandColor ? { color: brandColor } : undefined} />
+          <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: brandColor ? `${brandColor}15` : '#f3f4f6' }}>
+            <Coffee className="h-5 w-5" style={brandColor ? { color: brandColor } : undefined} />
+          </div>
         )}
-        <div>
-          <h1 className="text-lg font-bold text-gray-900">CaféOS</h1>
+        <div className="min-w-0">
           {shopName && (
-            <p className="text-xs text-gray-500 truncate max-w-[160px]">{shopName}</p>
+            <h1 className="text-sm font-bold text-gray-900 truncate max-w-[160px]">{shopName}</h1>
           )}
+          <p className="text-[10px] text-gray-400">Powered by CaféOS</p>
         </div>
       </div>
 

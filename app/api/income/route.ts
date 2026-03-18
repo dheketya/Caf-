@@ -29,14 +29,20 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get('type')
   const from = searchParams.get('from')
   const to = searchParams.get('to')
+  const month = searchParams.get('month') // "2026-03"
+  const payment = searchParams.get('payment')
 
   const where: any = { shopId: user.shopId }
   if (type) where.type = type
-  if (from || to) {
+  if (month) {
+    const [y, m] = month.split('-').map(Number)
+    where.date = { gte: new Date(y, m - 1, 1), lt: new Date(y, m, 1) }
+  } else if (from || to) {
     where.date = {}
     if (from) where.date.gte = new Date(from)
     if (to) where.date.lte = new Date(to)
   }
+  if (payment) where.paymentMethod = payment
 
   const entries = await prisma.financeEntry.findMany({
     where,

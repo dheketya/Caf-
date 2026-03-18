@@ -54,9 +54,13 @@ export async function POST(request: NextRequest) {
 
     // Create shop and owner in a transaction
     const result = await prisma.$transaction(async (tx) => {
+      // Generate short shop code (6 chars alphanumeric uppercase)
+      const shopCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+
       const shop = await tx.shop.create({
         data: {
           name: data.businessName,
+          shopCode,
           packageId: freePlan.id, // Always start on Free
           billingCycle: isPaidRequest ? data.billingCycle : 'monthly',
           // If paid plan requested, save it for approval

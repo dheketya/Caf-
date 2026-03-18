@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
-import { formatCurrency, formatDate, toKHR } from '@/lib/utils'
-import { Plus, TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
+import { cn, formatCurrency, formatDate, toKHR } from '@/lib/utils'
+import { Plus, TrendingUp, TrendingDown, DollarSign, CalendarDays, Banknote, QrCode, ArrowLeftRight } from 'lucide-react'
 
 interface FinanceEntry {
   id: string
@@ -34,6 +34,12 @@ export default function IncomePage() {
   const [showModal, setShowModal] = useState(false)
   const [loading, setLoading] = useState(false)
   const [filterType, setFilterType] = useState<string>('')
+  const [filterPayment, setFilterPayment] = useState<string>('')
+  const [period, setPeriod] = useState<'all' | 'month'>('month')
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  })
   const [error, setError] = useState('')
 
   const [form, setForm] = useState({
@@ -57,11 +63,13 @@ export default function IncomePage() {
 
   useEffect(() => {
     loadEntries()
-  }, [filterType])
+  }, [filterType, filterPayment, period, selectedMonth])
 
   async function loadEntries() {
     const params = new URLSearchParams()
     if (filterType) params.set('type', filterType)
+    if (filterPayment) params.set('payment', filterPayment)
+    if (period === 'month') params.set('month', selectedMonth)
     const res = await fetch(`/api/income?${params}`)
     if (res.ok) {
       setEntries(await res.json())
@@ -153,16 +161,63 @@ export default function IncomePage() {
         </Card>
       </div>
 
-      <div className="flex gap-2">
-        {['', 'INCOME', 'EXPENSE'].map((t) => (
-          <button
-            key={t}
-            onClick={() => setFilterType(t)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium ${filterType === t ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600'}`}
-          >
-            {t || 'All'}
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Period */}
+        <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-1">
+          <button onClick={() => setPeriod('all')} className={cn('px-3 py-1.5 rounded-md text-sm font-medium transition-colors', period === 'all' ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50')}>
+            All Time
           </button>
-        ))}
+          <button onClick={() => setPeriod('month')} className={cn('px-3 py-1.5 rounded-md text-sm font-medium transition-colors', period === 'month' ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50')}>
+            Monthly
+          </button>
+        </div>
+
+        {period === 'month' && (
+          <div className="flex items-center gap-1.5">
+            <CalendarDays className="h-4 w-4 text-gray-400" />
+            <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700">
+              {(() => {
+                const months = []
+                const now = new Date()
+                for (let i = 0; i < 12; i++) {
+                  const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+                  const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+                  const label = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+                  months.push(<option key={value} value={value}>{label}</option>)
+                }
+                return months
+              })()}
+            </select>
+          </div>
+        )}
+
+        {/* Type filter */}
+        <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-1">
+          {[
+            { value: '', label: 'All' },
+            { value: 'INCOME', label: 'Income', color: 'text-green-600' },
+            { value: 'EXPENSE', label: 'Expense', color: 'text-red-600' },
+          ].map((t) => (
+            <button key={t.value} onClick={() => setFilterType(t.value)} className={cn('px-3 py-1.5 rounded-md text-sm font-medium transition-colors', filterType === t.value ? 'bg-gray-900 text-white' : `${t.color || 'text-gray-600'} hover:bg-gray-50`)}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Payment filter */}
+        <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-1">
+          {[
+            { value: '', label: 'All Pay' },
+            { value: 'CASH', label: 'Cash', icon: <Banknote className="h-3.5 w-3.5" /> },
+            { value: 'QR_EWALLET', label: 'Bank', icon: <QrCode className="h-3.5 w-3.5" /> },
+            { value: 'SPLIT', label: 'Mixed', icon: <ArrowLeftRight className="h-3.5 w-3.5" /> },
+          ].map((opt) => (
+            <button key={opt.value} onClick={() => setFilterPayment(opt.value)} className={cn('flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm font-medium transition-colors', filterPayment === opt.value ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50')}>
+              {opt.icon}{opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="overflow-x-auto bg-white rounded-xl border border-gray-200">

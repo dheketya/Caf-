@@ -114,8 +114,9 @@ model Package {
 
 model Shop {
   id          String     @id @default(cuid())
+  shopCode    String?    @unique @map("shop_code") // short code for staff login
   name        String
-  logo        String?
+  logo        String?    @db.LongText
   brandColor  String     @default("#e85d3a") @map("brand_color")
   address     String?
   phone       String?
@@ -125,6 +126,12 @@ model Shop {
   status      ShopStatus @default(ACTIVE)
   billingCycle String    @default("monthly") @map("billing_cycle") // "monthly" | "annual"
   sugarLevels Json?     @map("sugar_levels") // ["0%", "10%", "25%", "50%", "100%"]
+
+  // Loyalty program settings
+  loyaltyEnabled       Boolean @default(false) @map("loyalty_enabled")
+  loyaltyTarget        Int     @default(10) @map("loyalty_target") // visits needed for reward
+  loyaltyDiscountType  String  @default("percentage") @map("loyalty_discount_type") // "percentage" | "fixed"
+  loyaltyDiscountValue Float   @default(10) @map("loyalty_discount_value") // e.g. 10 = 10% or $10
 
   packageId   String     @map("package_id")
   package     Package    @relation(fields: [packageId], references: [id])
@@ -149,6 +156,7 @@ model Shop {
   categories  Category[]
   modifierGroups ModifierGroup[]
   orders      Order[]
+  customers   Customer[]
   stockItems  StockItem[]
   financeEntries FinanceEntry[]
   invoices    Invoice[]
@@ -235,6 +243,8 @@ model Product {
   sortOrder   Int      @default(0) @map("sort_order")
   hasSugarLevel Boolean @default(false) @map("has_sugar_level")
   sizes       Json?    // [{name:"S",price:2.50},{name:"M",price:3.00},{name:"L",price:null}] null=unavailable
+  discountType  String?  @map("discount_type")  // "percentage" | "fixed" | null = no discount
+  discountValue Float?   @map("discount_value") // e.g. 10 = 10% or $10
 
   categoryId  String?  @map("category_id")
   category    Category? @relation(fields: [categoryId], references: [id])
@@ -300,6 +310,30 @@ model ProductModifierGroup {
   @@map("product_modifier_groups")
 }
 
+// ─── Customers ──────────────────────────────────────────
+
+model Customer {
+  id            String   @id @default(cuid())
+  phone         String
+  name          String?
+  totalVisits   Int      @default(0) @map("total_visits")
+  totalSpent    Float    @default(0) @map("total_spent")
+  lastVisitAt   DateTime? @map("last_visit_at")
+  note          String?
+
+  shopId        String   @map("shop_id")
+  shop          Shop     @relation(fields: [shopId], references: [id])
+
+  orders        Order[]
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([shopId, phone])
+  @@index([shopId])
+  @@map("customers")
+}
+
 // ─── Orders ─────────────────────────────────────────────
 
 model Order {
@@ -324,6 +358,9 @@ model Order {
   userId        String        @map("user_id")
   user          User          @relation(fields: [userId], references: [id])
 
+  customerId    String?       @map("customer_id")
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+
   items         OrderItem[]
 
   createdAt     DateTime      @default(now()) @map("created_at")
@@ -331,17 +368,19 @@ model Order {
 
   @@index([shopId])
   @@index([userId])
+  @@index([customerId])
   @@map("orders")
 }
 
 model OrderItem {
   id        String   @id @default(cuid())
   quantity  Int
-  unitPrice Float    @map("unit_price")
-  total     Float
-  notes     String?
-  sizeName  String?  @map("size_name")
-  sugarLevel String? @map("sugar_level")
+  unitPrice     Float    @map("unit_price")
+  originalPrice Float?   @map("original_price") // price before product discount
+  total         Float
+  notes         String?
+  sizeName      String?  @map("size_name")
+  sugarLevel    String?  @map("sugar_level")
 
   orderId   String   @map("order_id")
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)

@@ -14,6 +14,7 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
 
+        // Login by email (shop owners) or username.shopCode (staff)
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
           include: { shop: true },

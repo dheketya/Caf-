@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `products` ADD COLUMN `discount_type` VARCHAR(191) NULL,
+    ADD COLUMN `discount_value` DOUBLE NULL;

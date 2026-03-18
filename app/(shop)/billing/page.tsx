@@ -197,6 +197,36 @@ export default function BillingPage() {
         </CardContent>
       </Card>
 
+      {/* KHQR Payment */}
+      {billing.khqrImage && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5 text-blue-600" />
+              Payment via KHQR
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-start gap-5">
+              <div className="p-2 bg-white rounded-xl border-2 border-gray-100 shadow-sm shrink-0">
+                <img src={billing.khqrImage} alt="KHQR" className="w-[160px] h-auto rounded-lg" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">
+                  Scan this KHQR code to make payment for your plan upgrade or renewal.
+                </p>
+                <div className="text-xs text-gray-400 space-y-1">
+                  <p>1. Scan the QR code with your banking app</p>
+                  <p>2. Transfer the plan amount</p>
+                  <p>3. Click Upgrade or Renew above</p>
+                  <p>4. Platform owner will verify and approve</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Available Plans */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-3">Available Plans</h2>

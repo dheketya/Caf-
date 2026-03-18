@@ -12,6 +12,7 @@ const createOrderSchema = z.object({
       productId: z.string(),
       quantity: z.number().int().positive(),
       unitPrice: z.number().optional(),
+      originalPrice: z.number().optional(),
       sizeName: z.string().optional(),
       sugarLevel: z.string().optional(),
       notes: z.string().optional(),
@@ -24,6 +25,7 @@ const createOrderSchema = z.object({
   paymentMethod: z.enum(['CASH', 'CARD', 'QR_EWALLET', 'SPLIT']),
   amountTendered: z.number().optional(),
   notes: z.string().optional(),
+  customerId: z.string().optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -108,6 +110,7 @@ export async function POST(request: NextRequest) {
         productId: item.productId,
         quantity: item.quantity,
         unitPrice,
+        originalPrice: item.originalPrice,
         total: itemTotal,
         notes: item.notes,
         sizeName: item.sizeName,
@@ -156,11 +159,13 @@ export async function POST(request: NextRequest) {
         notes: data.notes,
         shopId: user.shopId,
         userId: user.id,
+        customerId: data.customerId,
         items: {
           create: orderItems.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
+            originalPrice: item.originalPrice,
             total: item.total,
             notes: item.notes,
             sizeName: item.sizeName,
@@ -215,6 +220,18 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Update customer stats
+    if (data.customerId) {
+      await prisma.customer.update({
+        where: { id: data.customerId },
+        data: {
+          totalVisits: { increment: 1 },
+          totalSpent: { increment: total },
+          lastVisitAt: new Date(),
+        },
+      })
+    }
+
     return NextResponse.json(order, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -237,11 +254,23 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const status = searchParams.get('status')
   const today = searchParams.get('today')
+  const month = searchParams.get('month') // format: "2026-03"
+  const payment = searchParams.get('payment')
 
   const where: any = { shopId: user.shopId }
   if (status) where.status = status
   if (today === 'true') {
     where.createdAt = { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+  }
+  if (month) {
+    const [y, m] = month.split('-').map(Number)
+    where.createdAt = {
+      gte: new Date(y, m - 1, 1),
+      lt: new Date(y, m, 1),
+    }
+  }
+  if (payment) {
+    where.paymentMethod = payment
   }
 
   const orders = await prisma.order.findMany({
