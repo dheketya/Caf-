@@ -1,0 +1,503 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider             = "mysql"
+  url                  = env("DATABASE_URL")
+  relationMode         = "prisma"
+}
+
+// ─── Enums ──────────────────────────────────────────────
+
+enum Role {
+  PLATFORM_OWNER
+  SHOP_OWNER
+  MANAGER
+  CASHIER
+  KITCHEN
+}
+
+enum ShopStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  CANCELLED
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  VOIDED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  QR_EWALLET
+  SPLIT
+}
+
+enum EntryType {
+  INCOME
+  EXPENSE
+}
+
+enum ExpenseCategory {
+  INGREDIENTS
+  RENT
+  UTILITIES
+  SALARIES
+  OTHER
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum InvoiceStatus {
+  PAID
+  PENDING
+  UNPAID
+}
+
+enum StockAdjustmentType {
+  RECEIVE
+  WASTAGE
+  CORRECTION
+  SALE_DEDUCTION
+}
+
+// ─── Platform ───────────────────────────────────────────
+
+model PlatformSettings {
+  id              String  @id @default(cuid())
+  telegramUsername String? @map("telegram_username")
+  telegramGroupLink String? @map("telegram_group_link")
+  khqrImage       String? @map("khqr_image") @db.LongText // base64 KHQR payment image
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_settings")
+}
+
+// ─── Packages / Plans ───────────────────────────────────
+
+model Package {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  saleLimit       Int?     @map("sale_limit") // null = unlimited
+  monthlyPrice    Float    @default(0) @map("monthly_price") // 0 = free
+  annualPrice     Float    @default(0) @map("annual_price")  // discounted annual
+  modules         Json     // list of enabled module keys
+  sortOrder       Int      @default(0) @map("sort_order")
+  isDefault       Boolean  @default(false) @map("is_default")
+  isVisible       Boolean  @default(true) @map("is_visible") // show on registration page
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  shops       Shop[]
+  invoices    Invoice[]
+
+  @@map("packages")
+}
+
+// ─── Shops ──────────────────────────────────────────────
+
+model Shop {
+  id          String     @id @default(cuid())
+  name        String
+  logo        String?
+  brandColor  String     @default("#e85d3a") @map("brand_color")
+  address     String?
+  phone       String?
+  currency    String     @default("USD")
+  timezone    String     @default("Asia/Phnom_Penh")
+  status      ShopStatus @default(ACTIVE)
+  billingCycle String    @default("monthly") @map("billing_cycle") // "monthly" | "annual"
+
+  packageId   String     @map("package_id")
+  package     Package    @relation(fields: [packageId], references: [id])
+
+  // Plan upgrade request (pending platform owner approval)
+  requestedPackageId   String?  @map("requested_package_id")
+  requestedBillingCycle String? @map("requested_billing_cycle") // "monthly" | "annual"
+  upgradeStatus        String   @default("none") @map("upgrade_status") // "none" | "pending" | "approved" | "rejected"
+
+  // Monthly quota tracking
+  saleCount       Int      @default(0) @map("sale_count")
+  saleCountResetAt DateTime @default(now()) @map("sale_count_reset_at")
+  quotaOverride   Int?     @map("quota_override") // temporary override from admin
+  quotaOverrideNote String? @map("quota_override_note")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  users       User[]
+  invitations Invitation[]
+  products    Product[]
+  categories  Category[]
+  modifierGroups ModifierGroup[]
+  orders      Order[]
+  stockItems  StockItem[]
+  financeEntries FinanceEntry[]
+  invoices    Invoice[]
+  chatMessages ChatMessage[]
+
+  @@index([packageId])
+  @@map("shops")
+}
+
+// ─── Users ──────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String   @map("password_hash")
+  role          Role     @default(CASHIER)
+  isActive      Boolean  @default(true) @map("is_active")
+  emailVerified DateTime? @map("email_verified")
+  lastLoginAt   DateTime? @map("last_login_at")
+
+  shopId        String?  @map("shop_id")
+  shop          Shop?    @relation(fields: [shopId], references: [id])
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  orders        Order[]
+  stockAdjustments StockAdjustment[]
+  financeEntries   FinanceEntry[]   @relation("CreatedBy")
+  approvedEntries  FinanceEntry[]   @relation("ApprovedBy")
+  chatMessages     ChatMessage[]
+
+  @@index([shopId])
+  @@map("users")
+}
+
+model Invitation {
+  id        String       @id @default(cuid())
+  email     String
+  role      Role
+  status    InviteStatus @default(PENDING)
+  token     String       @unique
+
+  shopId    String       @map("shop_id")
+  shop      Shop         @relation(fields: [shopId], references: [id])
+
+  createdAt DateTime     @default(now()) @map("created_at")
+  expiresAt DateTime     @map("expires_at")
+
+  @@index([shopId])
+  @@map("invitations")
+}
+
+// ─── Products ───────────────────────────────────────────
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  color     String?
+  sortOrder Int       @default(0) @map("sort_order")
+
+  shopId    String    @map("shop_id")
+  shop      Shop      @relation(fields: [shopId], references: [id])
+
+  products  Product[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([shopId])
+  @@map("categories")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  sku         String?
+  image       String?
+  isActive    Boolean  @default(true) @map("is_active")
+  isOutOfStock Boolean @default(false) @map("is_out_of_stock")
+  sortOrder   Int      @default(0) @map("sort_order")
+
+  categoryId  String?  @map("category_id")
+  category    Category? @relation(fields: [categoryId], references: [id])
+
+  shopId      String   @map("shop_id")
+  shop        Shop     @relation(fields: [shopId], references: [id])
+
+  orderItems  OrderItem[]
+  stockIngredients ProductIngredient[]
+  modifierGroups   ProductModifierGroup[]
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([shopId])
+  @@index([categoryId])
+  @@map("products")
+}
+
+model ModifierGroup {
+  id        String   @id @default(cuid())
+  name      String
+  isRequired Boolean @default(false) @map("is_required")
+
+  shopId    String   @map("shop_id")
+  shop      Shop     @relation(fields: [shopId], references: [id])
+
+  modifiers Modifier[]
+  products  ProductModifierGroup[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([shopId])
+  @@map("modifier_groups")
+}
+
+model Modifier {
+  id              String        @id @default(cuid())
+  name            String
+  priceAdjustment Float         @default(0) @map("price_adjustment")
+
+  groupId         String        @map("group_id")
+  group           ModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  orderItemModifiers OrderItemModifier[]
+
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  @@index([groupId])
+  @@map("modifiers")
+}
+
+model ProductModifierGroup {
+  productId       String        @map("product_id")
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  modifierGroupId String        @map("modifier_group_id")
+  modifierGroup   ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+
+  @@id([productId, modifierGroupId])
+  @@index([modifierGroupId])
+  @@map("product_modifier_groups")
+}
+
+// ─── Orders ─────────────────────────────────────────────
+
+model Order {
+  id            String        @id @default(cuid())
+  orderNumber   Int           @map("order_number")
+  status        OrderStatus   @default(PENDING)
+  subtotal      Float
+  discountType  String?       @map("discount_type") // "percentage" or "fixed"
+  discountValue Float?        @map("discount_value")
+  discountReason String?      @map("discount_reason")
+  taxAmount     Float         @default(0) @map("tax_amount")
+  total         Float
+  paymentMethod PaymentMethod? @map("payment_method")
+  amountTendered Float?       @map("amount_tendered")
+  changeAmount  Float?        @map("change_amount")
+  notes         String?
+  kitchenReady  Boolean       @default(false) @map("kitchen_ready")
+
+  shopId        String        @map("shop_id")
+  shop          Shop          @relation(fields: [shopId], references: [id])
+
+  userId        String        @map("user_id")
+  user          User          @relation(fields: [userId], references: [id])
+
+  items         OrderItem[]
+
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  @@index([shopId])
+  @@index([userId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  quantity  Int
+  unitPrice Float    @map("unit_price")
+  total     Float
+  notes     String?
+
+  orderId   String   @map("order_id")
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId String   @map("product_id")
+  product   Product  @relation(fields: [productId], references: [id])
+
+  modifiers OrderItemModifier[]
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model OrderItemModifier {
+  id              String    @id @default(cuid())
+  priceAdjustment Float     @map("price_adjustment")
+
+  orderItemId     String    @map("order_item_id")
+  orderItem       OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  modifierId      String    @map("modifier_id")
+  modifier        Modifier  @relation(fields: [modifierId], references: [id])
+
+  @@index([orderItemId])
+  @@index([modifierId])
+  @@map("order_item_modifiers")
+}
+
+// ─── Stock / Inventory ──────────────────────────────────
+
+model StockItem {
+  id               String   @id @default(cuid())
+  name             String
+  unit             String   // g, ml, pcs, kg, etc.
+  currentQuantity  Float    @default(0) @map("current_quantity")
+  reorderThreshold Float    @default(0) @map("reorder_threshold")
+  costPerUnit      Float    @default(0) @map("cost_per_unit")
+
+  shopId           String   @map("shop_id")
+  shop             Shop     @relation(fields: [shopId], references: [id])
+
+  adjustments      StockAdjustment[]
+  productIngredients ProductIngredient[]
+
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@index([shopId])
+  @@map("stock_items")
+}
+
+model ProductIngredient {
+  id          String    @id @default(cuid())
+  quantity    Float     // amount of ingredient per 1 product unit
+
+  productId   String    @map("product_id")
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  stockItemId String    @map("stock_item_id")
+  stockItem   StockItem @relation(fields: [stockItemId], references: [id])
+
+  @@index([productId])
+  @@index([stockItemId])
+  @@map("product_ingredients")
+}
+
+model StockAdjustment {
+  id            String              @id @default(cuid())
+  type          StockAdjustmentType
+  quantity      Float
+  supplierName  String?             @map("supplier_name")
+  purchasePrice Float?              @map("purchase_price")
+  reason        String?
+
+  stockItemId   String              @map("stock_item_id")
+  stockItem     StockItem           @relation(fields: [stockItemId], references: [id])
+
+  userId        String              @map("user_id")
+  user          User                @relation(fields: [userId], references: [id])
+
+  createdAt     DateTime            @default(now()) @map("created_at")
+
+  @@index([stockItemId])
+  @@index([userId])
+  @@map("stock_adjustments")
+}
+
+// ─── Income & Expense ───────────────────────────────────
+
+model FinanceEntry {
+  id              String          @id @default(cuid())
+  type            EntryType
+  amount          Float
+  category        String?
+  expenseCategory ExpenseCategory? @map("expense_category")
+  vendorName      String?         @map("vendor_name")
+  note            String?
+  receiptUrl      String?         @map("receipt_url")
+  date            DateTime
+  approvalStatus  ApprovalStatus  @default(APPROVED) @map("approval_status")
+
+  shopId          String          @map("shop_id")
+  shop            Shop            @relation(fields: [shopId], references: [id])
+
+  createdById     String          @map("created_by_id")
+  createdBy       User            @relation("CreatedBy", fields: [createdById], references: [id])
+
+  approvedById    String?         @map("approved_by_id")
+  approvedBy      User?           @relation("ApprovedBy", fields: [approvedById], references: [id])
+
+  orderId         String?         @map("order_id") // link to auto-generated income from sale
+
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  @@index([shopId])
+  @@index([createdById])
+  @@index([approvedById])
+  @@map("finance_entries")
+}
+
+// ─── Billing ────────────────────────────────────────────
+
+model Invoice {
+  id          String        @id @default(cuid())
+  amount      Float
+  status      InvoiceStatus @default(PENDING)
+  note        String?
+
+  shopId      String        @map("shop_id")
+  shop        Shop          @relation(fields: [shopId], references: [id])
+
+  packageId   String        @map("package_id")
+  package     Package       @relation(fields: [packageId], references: [id])
+
+  paidAt      DateTime?     @map("paid_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  @@index([shopId])
+  @@index([packageId])
+  @@map("invoices")
+}
+
+// ─── Chat ───────────────────────────────────────────────
+
+model ChatMessage {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  imageUrl    String?  @map("image_url")
+  isRead      Boolean  @default(false) @map("is_read")
+
+  shopId      String   @map("shop_id")
+  shop        Shop     @relation(fields: [shopId], references: [id])
+
+  senderId    String   @map("sender_id")
+  sender      User     @relation(fields: [senderId], references: [id])
+
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([shopId])
+  @@index([senderId])
+  @@map("chat_messages")
+}
