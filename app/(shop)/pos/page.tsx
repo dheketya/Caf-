@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -85,6 +85,8 @@ export default function POSPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [lastOrder, setLastOrder] = useState<any>(null)
+  const [showInvoice, setShowInvoice] = useState(false)
+  const invoiceRef = useRef<HTMLDivElement>(null)
 
   // Customization modal
   const [customProduct, setCustomProduct] = useState<Product | null>(null)
@@ -312,96 +314,66 @@ export default function POSPage() {
     setLoading(false)
   }
 
-  function printInvoice(order: any) {
-    const rate = shopInfo.exchangeRate
-    const items = order.items || []
-    const now = new Date(order.createdAt || Date.now())
-    const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  function printInvoice() {
+    setShowInvoice(true)
+  }
 
-    const receiptHtml = `
-      <html>
-      <head>
-        <title>Invoice #${order.orderNumber}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Courier New', monospace; width: 300px; padding: 16px; font-size: 12px; color: #000; }
-          .center { text-align: center; }
-          .bold { font-weight: bold; }
-          .line { border-top: 1px dashed #000; margin: 8px 0; }
-          .row { display: flex; justify-content: space-between; margin: 2px 0; }
-          .item-name { font-weight: bold; }
-          .item-detail { color: #555; font-size: 11px; padding-left: 8px; }
-          .total-row { font-size: 14px; font-weight: bold; }
-          .khr { color: #666; font-size: 11px; }
-          h2 { font-size: 16px; margin-bottom: 2px; }
-          .footer { margin-top: 12px; font-size: 11px; color: #666; }
-        </style>
-      </head>
-      <body>
-        <div class="center">
-          <h2>${shopInfo.name || 'Shop'}</h2>
-          ${shopInfo.address ? `<p>${shopInfo.address}</p>` : ''}
-          ${shopInfo.phone ? `<p>Tel: ${shopInfo.phone}</p>` : ''}
-        </div>
-        <div class="line"></div>
-        <div class="row"><span>Invoice #${order.orderNumber}</span><span>${dateStr}</span></div>
-        <div class="row"><span></span><span>${timeStr}</span></div>
-        <div class="line"></div>
-        ${items.map((item: any) => {
-          const price = item.unitPrice
-          const itemTotal = item.total
-          const khrTotal = Math.round(itemTotal * rate)
-          return `
-            <div style="margin: 4px 0;">
-              <div class="row">
-                <span class="item-name">${item.product?.name || 'Item'}</span>
-                <span>$${itemTotal.toFixed(2)}</span>
-              </div>
-              ${item.sizeName ? `<div class="item-detail">Size: ${item.sizeName}</div>` : ''}
-              ${item.sugarLevel ? `<div class="item-detail">Sugar: ${item.sugarLevel}</div>` : ''}
-              ${item.originalPrice && item.originalPrice > price ? `<div class="item-detail" style="text-decoration:line-through;color:#999">${item.quantity} x $${item.originalPrice.toFixed(2)}</div>` : ''}
-              <div class="item-detail">${item.quantity} x $${price.toFixed(2)} <span class="khr">(${khrTotal.toLocaleString()}៛)</span></div>
-            </div>
-          `
-        }).join('')}
-        <div class="line"></div>
-        ${order.discountValue ? `
-          <div class="row"><span>Subtotal</span><span>$${order.subtotal.toFixed(2)}</span></div>
-          <div class="row">
-            <span>${order.discountReason || 'Discount'}${order.discountType === 'percentage' ? ` (${order.discountValue}%)` : ''}</span>
-            <span>-$${(order.subtotal - order.total).toFixed(2)}</span>
-          </div>
-          <div class="row khr"><span></span><span>-${Math.round((order.subtotal - order.total) * rate).toLocaleString()}៛</span></div>
-        ` : ''}
-        <div class="row total-row">
-          <span>TOTAL</span>
-          <span>$${order.total.toFixed(2)}</span>
-        </div>
-        <div class="row khr"><span></span><span>${Math.round(order.total * rate).toLocaleString()}៛</span></div>
-        <div class="line"></div>
-        <div class="row"><span>Payment</span><span>${order.paymentMethod?.replace('_', ' ')}</span></div>
-        ${order.amountTendered ? `
-          <div class="row"><span>Tendered</span><span>$${order.amountTendered.toFixed(2)}</span></div>
-          <div class="row"><span>Change</span><span>$${(order.changeAmount || 0).toFixed(2)}</span></div>
-        ` : ''}
-        <div class="line"></div>
-        <div class="center footer">
-          <p>Thank you for your visit!</p>
-          <p>Powered by CaféOS</p>
-        </div>
-      </body>
-      </html>
-    `
-
-    const printWindow = window.open('', '_blank', 'width=320,height=600')
-    if (printWindow) {
-      printWindow.document.write(receiptHtml)
-      printWindow.document.close()
-      printWindow.onload = () => {
-        printWindow.print()
-      }
-    }
+  function handlePrint() {
+    const content = invoiceRef.current
+    if (!content) return
+    const printWindow = window.open('', '', 'width=800,height=900')
+    if (!printWindow) return
+    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice</title>
+<style>
+  @page { size: 80mm auto; margin: 4mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; max-width: 300px; margin: 0 auto; padding: 16px; font-size: 12px; color: #000; }
+  .text-center, [class*="text-center"] { text-align: center; }
+  .text-right, [class*="text-right"] { text-align: right; }
+  .text-lg { font-size: 16px; }
+  .text-base { font-size: 14px; }
+  .text-sm { font-size: 12px; }
+  .text-xs { font-size: 10px; }
+  .text-\\[10px\\], .text-\\[11px\\] { font-size: 10px; }
+  .font-extrabold { font-weight: 800; }
+  .font-semibold { font-weight: 600; }
+  .font-bold { font-weight: 700; }
+  .text-gray-900 { color: #111; }
+  .text-gray-500 { color: #666; }
+  .text-gray-400 { color: #999; }
+  .text-green-600 { color: #16a34a; }
+  .line-through { text-decoration: line-through; }
+  hr { border: none; border-top: 1px dashed #ccc; margin: 8px 0; }
+  .flex { display: flex; }
+  .justify-between { justify-content: space-between; }
+  .items-baseline { align-items: baseline; }
+  .gap-3 { gap: 8px; }
+  .space-y-2 > * + * { margin-top: 6px; }
+  .space-y-0\\.5 > * + * { margin-top: 2px; }
+  .py-1 { padding-top: 4px; padding-bottom: 4px; }
+  .py-0\\.5 { padding-top: 2px; padding-bottom: 2px; }
+  .pt-1 { padding-top: 4px; }
+  .mt-1 { margin-top: 4px; }
+  .mt-3 { margin-top: 10px; }
+  .my-2 { margin-top: 6px; margin-bottom: 6px; }
+  .my-3 { margin-top: 10px; margin-bottom: 10px; }
+  .pb-3 { padding-bottom: 10px; }
+  .p-3 { padding: 8px; }
+  .ml-1 { margin-left: 4px; }
+  .mr-1\\.5 { margin-right: 4px; }
+  .border-t-2 { border-top: 2px solid #111; }
+  .border-b { border-bottom: 1px solid #f0f0f0; }
+  .border-dashed { border-style: dashed; }
+  .border-gray-300 { border-color: #ccc; }
+  .border-gray-900 { border-color: #111; }
+  .border-gray-50 { border-color: #f8f8f8; }
+  .bg-gray-50 { background: #f8f8f8; }
+  .rounded-lg { border-radius: 6px; }
+  .last\\:border-0:last-child { border-bottom: none; }
+</style>
+</head><body>${content.innerHTML}</body></html>`)
+    printWindow.document.close()
+    printWindow.onload = () => { printWindow.print(); printWindow.close() }
   }
 
   // Computed for customization modal
@@ -878,7 +850,7 @@ export default function POSPage() {
               <p className="text-sm text-gray-400">{toKHR(lastOrder.total, shopInfo.exchangeRate)}</p>
             </div>
             <div className="flex gap-3">
-              <Button variant="outline" onClick={() => printInvoice(lastOrder)} className="flex-1">
+              <Button variant="outline" onClick={() => printInvoice()} className="flex-1">
                 <Printer className="h-4 w-4 mr-1.5" /> Print Invoice
               </Button>
               <Button variant="outline" onClick={() => setLastOrder(null)} className="flex-1">
@@ -888,6 +860,120 @@ export default function POSPage() {
           </div>
         )}
       </Modal>
+
+      {/* Fullscreen Invoice Preview */}
+      {showInvoice && lastOrder && (() => {
+        const order = lastOrder
+        const rate = shopInfo.exchangeRate
+        const items = order.items || []
+        const now = new Date(order.createdAt || Date.now())
+        const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        const payLabel: Record<string, string> = { CASH: 'Cash', QR_EWALLET: 'Bank Transfer', SPLIT: 'Cash + Bank' }
+
+        return (
+          <div className="fixed inset-0 z-[100] bg-gray-900/60 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[calc(100vh-2rem)] flex flex-col">
+              {/* Header bar */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 shrink-0">
+                <h2 className="text-base font-bold text-gray-900">Invoice Preview</h2>
+                <button onClick={() => setShowInvoice(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+              </div>
+
+              {/* Scrollable receipt */}
+              <div className="flex-1 overflow-y-auto px-5 py-4">
+                <div ref={invoiceRef}>
+                  {/* Shop header */}
+                  <div className="text-center pb-3">
+                    <h3 className="text-lg font-extrabold text-gray-900">{shopInfo.name || 'Shop'}</h3>
+                    {shopInfo.address && <p className="text-xs text-gray-500">{shopInfo.address}</p>}
+                    {shopInfo.phone && <p className="text-xs text-gray-500">Tel: {shopInfo.phone}</p>}
+                  </div>
+                  <hr className="border-dashed border-gray-300 my-2" />
+
+                  {/* Meta */}
+                  <div className="flex justify-between text-xs text-gray-500 py-1">
+                    <span className="font-semibold text-gray-700">Invoice #{order.orderNumber}</span>
+                    <span>{dateStr} {timeStr}</span>
+                  </div>
+                  <hr className="border-dashed border-gray-300 my-2" />
+
+                  {/* Items */}
+                  <div className="space-y-2 py-1">
+                    {items.map((item: any, idx: number) => {
+                      const price = item.unitPrice
+                      const itemTotal = item.total
+                      const khrTotal = Math.round(itemTotal * rate)
+                      const hasDisc = item.originalPrice && item.originalPrice > price
+                      return (
+                        <div key={idx} className="py-1 border-b border-gray-50 last:border-0">
+                          <div className="flex justify-between">
+                            <span className="text-sm font-semibold text-gray-900">{item.product?.name || 'Item'}</span>
+                            <span className="text-sm font-semibold text-gray-900">${itemTotal.toFixed(2)}</span>
+                          </div>
+                          {(item.sizeName || item.sugarLevel) && (
+                            <div className="flex gap-3 mt-0.5">
+                              {item.sizeName && <span className="text-[10px] text-gray-500">Size: {item.sizeName}</span>}
+                              {item.sugarLevel && <span className="text-[10px] text-gray-500">Sugar: {item.sugarLevel}</span>}
+                            </div>
+                          )}
+                          {hasDisc && <p className="text-[10px] text-gray-400 line-through">{item.quantity} x ${item.originalPrice.toFixed(2)}</p>}
+                          <p className="text-[11px] text-gray-500">{item.quantity} x ${price.toFixed(2)} <span className="text-gray-400">({khrTotal.toLocaleString()}៛)</span></p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <hr className="border-dashed border-gray-300 my-2" />
+
+                  {/* Summary */}
+                  {order.discountValue > 0 && (
+                    <>
+                      <div className="flex justify-between text-xs py-0.5"><span>Subtotal</span><span>${order.subtotal.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-xs text-green-600 py-0.5">
+                        <span>{order.discountReason || 'Discount'}</span>
+                        <span>-${(order.subtotal - order.total).toFixed(2)} <span className="text-gray-400">(-{Math.round((order.subtotal - order.total) * rate).toLocaleString()}៛)</span></span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex justify-between items-baseline pt-1 mt-1 border-t-2 border-gray-900">
+                    <span className="text-base font-extrabold">TOTAL</span>
+                    <div className="text-right">
+                      <span className="text-lg font-extrabold">${order.total.toFixed(2)}</span>
+                      <span className="text-xs text-gray-400 ml-1">{Math.round(order.total * rate).toLocaleString()}៛</span>
+                    </div>
+                  </div>
+
+                  {/* Payment */}
+                  <div className="bg-gray-50 rounded-lg p-3 mt-3 text-xs space-y-0.5">
+                    <div className="flex justify-between"><span className="text-gray-500">Payment</span><span className="font-semibold">{payLabel[order.paymentMethod] || order.paymentMethod}</span></div>
+                    {order.amountTendered && (
+                      <>
+                        <div className="flex justify-between"><span className="text-gray-500">Tendered</span><span className="font-semibold">${order.amountTendered.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">Change</span><span className="font-semibold">${(order.changeAmount || 0).toFixed(2)}</span></div>
+                      </>
+                    )}
+                  </div>
+                  <hr className="border-dashed border-gray-300 my-3" />
+                  <div className="text-center text-[10px] text-gray-400">
+                    <p>Thank you for your visit!</p>
+                    <p className="mt-1">Powered by CaféOS</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action buttons - fixed at bottom */}
+              <div className="flex gap-3 px-5 py-4 border-t border-gray-100 shrink-0">
+                <Button className="flex-1" onClick={handlePrint}>
+                  <Printer className="h-4 w-4 mr-1.5" /> Print
+                </Button>
+                <Button variant="outline" className="flex-1" onClick={() => setShowInvoice(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Header } from '@/components/layout/header'
 import { AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
+import { cn } from '@/lib/utils'
 
 interface ShopLayoutClientProps {
   children: React.ReactNode
@@ -21,10 +23,20 @@ interface ShopLayoutClientProps {
 }
 
 export function ShopLayoutClient({ children, role, shopName, shopLogo, brandColor, packageName, quota }: ShopLayoutClientProps) {
+  const [collapsed, setCollapsed] = useState(false)
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Sidebar role={role} shopName={shopName} shopLogo={shopLogo} brandColor={brandColor} isQuotaBlocked={quota.isBlocked} />
-      <div className="ml-64">
+      <Sidebar
+        role={role}
+        shopName={shopName}
+        shopLogo={shopLogo}
+        brandColor={brandColor}
+        isQuotaBlocked={quota.isBlocked}
+        collapsed={collapsed}
+        onToggle={() => setCollapsed(!collapsed)}
+      />
+      <div className={cn('transition-all duration-200', collapsed ? 'ml-16' : 'ml-64')}>
         <Header quota={quota} />
         {quota.isBlocked && (
           <div className="mx-6 mt-4 rounded-xl border border-amber-200 bg-amber-50 p-5">

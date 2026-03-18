@@ -30,19 +30,19 @@ function StepIndicator({ current, showPayment }: { current: string; showPayment:
   const currentIdx = steps.findIndex((s) => s.key === current)
 
   return (
-    <div className="flex items-center justify-center gap-2 mb-8">
+    <div className="flex items-center justify-center gap-2 mb-4">
       {steps.map((step, i) => (
         <div key={step.key} className="flex items-center gap-2">
           <div className={cn(
-            'flex items-center gap-2 text-sm font-medium transition-colors',
+            'flex items-center gap-1.5 text-xs font-medium transition-colors',
             i <= currentIdx ? 'text-brand-600' : 'text-gray-300'
           )}>
             <div className={cn(
-              'h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold transition-all',
+              'h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all',
               i < currentIdx
                 ? 'bg-brand-600 text-white'
                 : i === currentIdx
-                  ? 'bg-brand-600 text-white ring-4 ring-brand-100'
+                  ? 'bg-brand-600 text-white ring-2 ring-brand-100'
                   : 'bg-gray-100 text-gray-400'
             )}>
               {i < currentIdx ? <Check className="h-3.5 w-3.5" /> : i + 1}
@@ -174,15 +174,15 @@ export default function RegisterPage() {
         <StepIndicator current="plan" showPayment={!!isPaidPlan} />
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-8 pt-8 pb-4">
-            <h2 className="text-2xl font-bold text-gray-900 text-center">Choose your plan</h2>
-            <p className="text-sm text-gray-500 text-center mt-2">
+          <div className="px-6 pt-5 pb-2">
+            <h2 className="text-lg font-bold text-gray-900 text-center">Choose your plan</h2>
+            <p className="text-xs text-gray-500 text-center mt-1">
               All features included on every plan. Upgrade or downgrade anytime.
             </p>
           </div>
 
           {/* Billing toggle */}
-          <div className="flex items-center justify-center gap-3 py-4">
+          <div className="flex items-center justify-center gap-2 py-2">
             <button
               type="button"
               onClick={() => setBillingCycle('monthly')}
@@ -218,8 +218,8 @@ export default function RegisterPage() {
           </div>
 
           {/* Plan cards */}
-          <div className="px-6 pb-2">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="px-4 pb-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {packages.map((pkg, i) => {
                 const isSelected = selectedPackageId === pkg.id
                 const annualSavings = pkg.monthlyPrice > 0
@@ -234,83 +234,63 @@ export default function RegisterPage() {
                     type="button"
                     onClick={() => setSelectedPackageId(pkg.id)}
                     className={cn(
-                      'relative rounded-xl border-2 p-5 text-left transition-all group',
+                      'relative rounded-xl border-2 p-3 text-left transition-all group',
                       isSelected
                         ? 'border-brand-500 bg-brand-50/60 shadow-sm shadow-brand-500/10'
                         : 'border-gray-100 bg-gray-50/50 hover:border-gray-200 hover:bg-white'
                     )}
                   >
-                    {/* Popular badge */}
                     {pkg.isDefault && (
-                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-brand-600 to-orange-500 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full shadow-sm">
-                        Most Popular
+                      <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-brand-600 to-orange-500 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                        Popular
                       </span>
                     )}
 
-                    {/* Icon + Name */}
-                    <div className="flex items-center gap-2 mb-3 mt-1">
+                    <div className="flex items-center gap-2 mb-2">
                       <div className={cn(
-                        'h-8 w-8 rounded-lg flex items-center justify-center',
-                        isSelected ? 'bg-brand-100 text-brand-600' : 'bg-gray-100 text-gray-400 group-hover:bg-gray-200'
+                        'h-6 w-6 rounded-md flex items-center justify-center',
+                        isSelected ? 'bg-brand-100 text-brand-600' : 'bg-gray-100 text-gray-400'
                       )}>
-                        <Icon className="h-4 w-4" />
+                        <Icon className="h-3.5 w-3.5" />
                       </div>
-                      <h3 className="text-base font-bold text-gray-900">{pkg.name}</h3>
+                      <h3 className="text-sm font-bold text-gray-900">{pkg.name}</h3>
                     </div>
 
-                    {/* Price */}
-                    <div className="mb-3">
+                    <div className="mb-2">
                       {pkg.monthlyPrice === 0 ? (
                         <div>
-                          <span className="text-3xl font-extrabold text-gray-900">$0</span>
-                          <span className="text-sm text-gray-400 ml-1">forever</span>
+                          <span className="text-2xl font-extrabold text-gray-900">$0</span>
+                          <span className="text-xs text-gray-400 ml-1">free</span>
                         </div>
                       ) : billingCycle === 'monthly' ? (
                         <div>
-                          <span className="text-3xl font-extrabold text-gray-900">
-                            {formatCurrency(pkg.monthlyPrice)}
-                          </span>
-                          <span className="text-sm text-gray-400 ml-1">/mo</span>
-                          {annualSavings > 0 && (
-                            <p className="text-xs text-green-600 font-medium mt-1">
-                              Save {annualSavings}% annually
-                            </p>
-                          )}
+                          <span className="text-2xl font-extrabold text-gray-900">{formatCurrency(pkg.monthlyPrice)}</span>
+                          <span className="text-xs text-gray-400">/mo</span>
+                          {annualSavings > 0 && <p className="text-[10px] text-green-600 font-medium">Save {annualSavings}%</p>}
                         </div>
                       ) : (
                         <div>
-                          <span className="text-3xl font-extrabold text-gray-900">
-                            {formatCurrency(pkg.annualPrice)}
-                          </span>
-                          <span className="text-sm text-gray-400 ml-1">/yr</span>
-                          {annualSavings > 0 && (
-                            <p className="text-xs text-green-600 font-medium mt-1">
-                              {annualSavings}% off vs monthly
-                            </p>
-                          )}
+                          <span className="text-2xl font-extrabold text-gray-900">{formatCurrency(pkg.annualPrice)}</span>
+                          <span className="text-xs text-gray-400">/yr</span>
+                          {annualSavings > 0 && <p className="text-[10px] text-green-600 font-medium">{annualSavings}% off</p>}
                         </div>
                       )}
                     </div>
 
-                    {/* Description */}
-                    <p className="text-xs text-gray-500 mb-3 leading-relaxed">{pkg.description}</p>
-
-                    {/* Features */}
-                    <div className="space-y-1.5 border-t border-gray-100 pt-3">
-                      <div className="flex items-center gap-2 text-xs">
-                        <Check className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
-                        <span className="text-gray-600">
-                          {pkg.saleLimit ? `${pkg.saleLimit.toLocaleString()} sales/month` : 'Unlimited sales'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        <Check className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
-                        <span className="text-gray-600">All features included</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        <Check className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
-                        <span className="text-gray-600">Full POS & reporting</span>
-                      </div>
+                    <div className="space-y-0.5 border-t border-gray-100 pt-2">
+                      {[
+                        pkg.saleLimit ? `${pkg.saleLimit.toLocaleString()} sales/mo` : 'Unlimited sales',
+                        'POS & Dual Currency',
+                        'Product Sizes & Sugar',
+                        'Customer Loyalty',
+                        'Income & Reports',
+                        'Staff Management',
+                      ].map((f) => (
+                        <div key={f} className="flex items-center gap-1.5 text-[10px]">
+                          <Check className="h-2.5 w-2.5 text-green-500 flex-shrink-0" />
+                          <span className="text-gray-600">{f}</span>
+                        </div>
+                      ))}
                     </div>
 
                     {/* Selected indicator */}
@@ -325,22 +305,34 @@ export default function RegisterPage() {
             </div>
           </div>
 
+          {/* Features showcase */}
+          <div className="px-4 pb-2">
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { icon: '💳', title: 'Smart POS', desc: 'USD & KHR dual currency' },
+                { icon: '☕', title: 'Coffee Ready', desc: 'Sizes, sugar & customization' },
+                { icon: '🎉', title: 'Loyalty', desc: 'Auto rewards & discounts' },
+                { icon: '📊', title: 'Reports', desc: 'Sales, payments & products' },
+                { icon: '👥', title: 'Customers', desc: 'Purchase history & CRM' },
+                { icon: '🧾', title: 'Invoice', desc: 'Print receipts instantly' },
+              ].map((f) => (
+                <div key={f.title} className="text-center p-2 rounded-lg bg-gray-50">
+                  <span className="text-lg">{f.icon}</span>
+                  <p className="text-[10px] font-bold text-gray-800 mt-0.5">{f.title}</p>
+                  <p className="text-[9px] text-gray-400">{f.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* CTA */}
-          <div className="px-8 py-6">
-            <Button
-              className="w-full"
-              size="lg"
-              onClick={() => setStep('details')}
-              disabled={!selectedPackageId}
-            >
+          <div className="px-4 py-3">
+            <Button className="w-full" onClick={() => setStep('details')} disabled={!selectedPackageId}>
               Continue with {selectedPackage?.name || 'selected'} plan
             </Button>
-
-            <p className="mt-4 text-center text-sm text-gray-400">
+            <p className="mt-2 text-center text-xs text-gray-400">
               Already have an account?{' '}
-              <Link href="/login" className="text-brand-600 font-medium hover:text-brand-700">
-                Sign in
-              </Link>
+              <Link href="/login" className="text-brand-600 font-medium hover:text-brand-700">Sign in</Link>
             </p>
           </div>
         </div>
@@ -439,10 +431,10 @@ export default function RegisterPage() {
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         {/* Selected plan summary bar */}
-        <div className="bg-gray-50 border-b border-gray-100 px-6 py-3 flex items-center justify-between">
+        <div className="bg-gray-50 border-b border-gray-100 px-4 py-2 flex items-center justify-between">
           <button
             onClick={() => setStep('plan')}
-            className="flex items-center gap-1.5 text-sm text-brand-600 hover:text-brand-700 font-medium transition-colors"
+            className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 font-medium transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Change plan
@@ -465,15 +457,15 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <div className="p-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-1">Register your shop</h2>
-          <p className="text-sm text-gray-500 mb-6">
+        <div className="p-5">
+          <h2 className="text-lg font-bold text-gray-900 mb-1">Register your shop</h2>
+          <p className="text-xs text-gray-500 mb-4">
             {!isPaidPlan
-              ? 'No payment required — start using all features immediately.'
+              ? 'No payment required — start immediately.'
               : 'Complete registration, then proceed to payment.'}
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <Input
                 id="businessName"
