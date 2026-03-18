@@ -54,8 +54,18 @@ export async function POST(request: NextRequest) {
 
     // Create shop and owner in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Generate short shop code (6 chars alphanumeric uppercase)
-      const shopCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+      // Generate shop code from business name abbreviation + random suffix
+      // e.g. "The Poaster Café" -> "TPC", "HOK HOK" -> "HH", then add 2 random digits
+      const words = data.businessName.trim().split(/\s+/).filter(Boolean)
+      const abbr = words.length >= 2
+        ? words.map((w) => w[0]).join('').toUpperCase().slice(0, 4)
+        : data.businessName.slice(0, 3).toUpperCase()
+      const suffix = Math.floor(10 + Math.random() * 90) // 2 random digits
+      let shopCode = `${abbr}${suffix}`
+
+      // Ensure uniqueness
+      const existing = await tx.shop.findUnique({ where: { shopCode } })
+      if (existing) shopCode = `${abbr}${Math.floor(100 + Math.random() * 900)}`
 
       const shop = await tx.shop.create({
         data: {

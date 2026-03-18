@@ -10,6 +10,7 @@ import { Upload, Image as ImageIcon, Plus, X } from 'lucide-react'
 export default function SettingsPage() {
   const router = useRouter()
   const [form, setForm] = useState({
+    shopCode: '',
     name: '',
     phone: '',
     address: '',
@@ -36,6 +37,7 @@ export default function SettingsPage() {
       .then((shop) => {
         if (shop && !shop.error) {
           setForm({
+            shopCode: shop.shopCode || '',
             name: shop.name || '',
             phone: shop.phone || '',
             address: shop.address || '',
@@ -76,6 +78,7 @@ export default function SettingsPage() {
     setSaved(false)
 
     const payload = {
+      shopCode: form.shopCode || undefined,
       name: form.name,
       phone: form.phone,
       address: form.address,
@@ -156,6 +159,21 @@ export default function SettingsPage() {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
             />
+
+            {/* Shop Code */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Shop Code</label>
+              <div className="flex items-center gap-3">
+                <Input
+                  value={form.shopCode}
+                  onChange={(e) => setForm({ ...form, shopCode: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })}
+                  placeholder="e.g. TPC97"
+                  className="w-40 font-mono font-bold uppercase"
+                />
+                <p className="text-xs text-gray-400">Staff login: <span className="font-mono">username.<strong>{form.shopCode || '...'}</strong></span></p>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Changing this will auto-update all staff login credentials</p>
+            </div>
 
             {/* Brand Color */}
             <div>

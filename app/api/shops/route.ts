@@ -18,8 +18,49 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
 
+    // Handle shop code change — rename all staff emails
+    if (body.shopCode) {
+      const newCode = body.shopCode.toUpperCase().replace(/[^A-Z0-9]/g, '')
+      if (newCode.length < 2) {
+        return NextResponse.json({ error: 'Shop code must be at least 2 characters' }, { status: 400 })
+      }
+
+      // Check uniqueness
+      const existingShop = await prisma.shop.findUnique({ where: { shopCode: newCode } })
+      if (existingShop && existingShop.id !== user.shopId) {
+        return NextResponse.json({ error: 'Shop code already taken' }, { status: 400 })
+      }
+
+      const currentShop = await prisma.shop.findUnique({ where: { id: user.shopId } })
+      const oldCode = currentShop?.shopCode
+
+      // Rename all staff emails to username.NEWCODE
+      const staffUsers = await prisma.user.findMany({
+        where: { shopId: user.shopId, role: { not: 'SHOP_OWNER' } },
+      })
+      for (const staff of staffUsers) {
+        // Extract username from any format: username.OLDCODE, username@shop.xxx, etc.
+        let username = staff.email
+        if (oldCode && staff.email.endsWith(`.${oldCode}`)) {
+          username = staff.email.slice(0, -(oldCode.length + 1))
+        } else if (staff.email.includes('@shop.')) {
+          username = staff.email.split('@')[0]
+        } else if (staff.email.includes('@')) {
+          continue // skip real email users (shop owners)
+        }
+        const newEmail = `${username}.${newCode}`
+        if (newEmail !== staff.email) {
+          await prisma.user.update({
+            where: { id: staff.id },
+            data: { email: newEmail },
+          })
+        }
+      }
+    }
+
     // Build update data — only include fields that are present
     const data: any = {}
+    if (body.shopCode) data.shopCode = body.shopCode.toUpperCase().replace(/[^A-Z0-9]/g, '')
     if (body.name !== undefined) data.name = body.name
     if (body.phone !== undefined) data.phone = body.phone
     if (body.address !== undefined) data.address = body.address
