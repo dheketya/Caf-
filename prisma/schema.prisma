@@ -141,6 +141,11 @@ model Shop {
   requestedBillingCycle String? @map("requested_billing_cycle") // "monthly" | "annual"
   upgradeStatus        String   @default("none") @map("upgrade_status") // "none" | "pending" | "approved" | "rejected"
 
+  // Plan expiration
+  planExpiresAt DateTime? @map("plan_expires_at") // null for free plan
+  planStartedAt DateTime? @map("plan_started_at")
+  lastActiveAt  DateTime? @map("last_active_at") // last time shop user logged in or made a sale
+
   // Monthly quota tracking
   saleCount       Int      @default(0) @map("sale_count")
   saleCountResetAt DateTime @default(now()) @map("sale_count_reset_at")
@@ -161,9 +166,27 @@ model Shop {
   financeEntries FinanceEntry[]
   invoices    Invoice[]
   chatMessages ChatMessage[]
+  planHistory PlanHistory[]
 
   @@index([packageId])
   @@map("shops")
+}
+
+// ─── Plan History ──────────────────────────────────────
+model PlanHistory {
+  id            String   @id @default(cuid())
+  shopId        String   @map("shop_id")
+  shop          Shop     @relation(fields: [shopId], references: [id])
+  packageName   String   @map("package_name") // snapshot of package name at the time
+  billingCycle  String   @map("billing_cycle") // "monthly" | "annual"
+  price         Float    @default(0)
+  action        String   // "subscribed" | "upgraded" | "downgraded" | "renewed" | "expired" | "cancelled"
+  startDate     DateTime @map("start_date")
+  endDate       DateTime? @map("end_date")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([shopId])
+  @@map("plan_history")
 }
 
 // ─── Users ──────────────────────────────────────────────

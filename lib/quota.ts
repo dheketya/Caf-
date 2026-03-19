@@ -59,10 +59,10 @@ export async function incrementSaleCounter(shopId: string): Promise<boolean> {
   const status = await getQuotaStatus(shopId)
   if (status.isBlocked) return false
 
-  // Atomic increment using raw query to prevent race conditions
+  // Atomic increment + update last active
   await prisma.$executeRaw`
     UPDATE shops
-    SET sale_count = sale_count + 1
+    SET sale_count = sale_count + 1, last_active_at = NOW()
     WHERE id = ${shopId}
   `
 

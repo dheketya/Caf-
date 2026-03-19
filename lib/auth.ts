@@ -28,11 +28,17 @@ export const authOptions: NextAuthOptions = {
         const isValid = await compare(credentials.password, user.passwordHash)
         if (!isValid) return null
 
-        // Update last login
+        // Update last login for user + shop
         await prisma.user.update({
           where: { id: user.id },
           data: { lastLoginAt: new Date() },
         })
+        if (user.shopId) {
+          await prisma.shop.update({
+            where: { id: user.shopId },
+            data: { lastActiveAt: new Date() },
+          })
+        }
 
         return {
           id: user.id,

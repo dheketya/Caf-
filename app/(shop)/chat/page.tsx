@@ -81,7 +81,7 @@ export default function ChatPage() {
                   {!isMe && (
                     <p className="text-xs font-medium mb-1 opacity-70">{msg.sender.name}</p>
                   )}
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  <p className="text-sm whitespace-pre-wrap font-khmer">{msg.content}</p>
                   {msg.imageUrl && (
                     <img src={msg.imageUrl} alt="" className="mt-2 rounded-lg max-w-full" />
                   )}
@@ -101,7 +101,7 @@ export default function ChatPage() {
           placeholder={t('chat.typeMessage')}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="flex-1"
+          className="flex-1 font-khmer"
         />
         <Button type="submit" disabled={sending || !input.trim()}>
           <Send className="h-4 w-4" />

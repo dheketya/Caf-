@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
 import { differenceInDays } from 'date-fns'
@@ -10,8 +11,44 @@ interface QuotaWidgetProps {
   resetDate: Date
 }
 
-export function QuotaWidget({ used, limit, resetDate }: QuotaWidgetProps) {
+interface QuotaData {
+  used: number
+  limit: number | null
+  resetDate: Date
+}
+
+export function QuotaWidget({ used: initialUsed, limit: initialLimit, resetDate: initialResetDate }: QuotaWidgetProps) {
   const { t } = useI18n()
+  const [quota, setQuota] = useState<QuotaData>({
+    used: initialUsed,
+    limit: initialLimit,
+    resetDate: initialResetDate,
+  })
+
+  // Refresh quota from API every 30 seconds to catch plan changes
+  useEffect(() => {
+    async function refreshQuota() {
+      try {
+        const res = await fetch('/api/shops/me')
+        if (!res.ok) return
+        const shop = await res.json()
+        if (!shop?.package) return
+        setQuota({
+          used: shop.saleCount,
+          limit: shop.quotaOverride ?? shop.package.saleLimit,
+          resetDate: quota.resetDate, // keep the reset date
+        })
+      } catch {}
+    }
+
+    // Refresh immediately to catch any plan change
+    refreshQuota()
+
+    const interval = setInterval(refreshQuota, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const { used, limit, resetDate } = quota
 
   if (limit === null) {
     return (

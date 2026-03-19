@@ -26,13 +26,11 @@ export async function GET(request: NextRequest) {
     take: 200,
   })
 
-  // Mark messages as read
-  if (user.role === 'PLATFORM_OWNER') {
-    await prisma.chatMessage.updateMany({
-      where: { shopId, isRead: false, senderId: { not: user.id } },
-      data: { isRead: true },
-    })
-  }
+  // Mark messages as read (for both platform owner and shop users)
+  await prisma.chatMessage.updateMany({
+    where: { shopId, isRead: false, senderId: { not: user.id } },
+    data: { isRead: true },
+  })
 
   return NextResponse.json(messages)
 }

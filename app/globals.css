@@ -21,6 +21,8 @@
     --border: 214.3 31.8% 91.4%;
     --ring: 16 78% 57%;
     --radius: 0.5rem;
+    --font-default: '__Inter_Fallback', 'Inter', -apple-system, 'Segoe UI', sans-serif;
+    --font-khmer: 'Khmer OS Siemreap', 'Khmer OS', 'Battambang', 'Noto Sans Khmer', sans-serif;
   }
 }
 
@@ -30,6 +32,11 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-default);
+  }
+  /* When lang=km, switch entire body to Khmer font */
+  html[lang="km"] body {
+    font-family: var(--font-khmer);
   }
 }
 
@@ -44,13 +51,6 @@
     color: hsl(var(--foreground));
   }
   .font-khmer {
-    font-family: 'Khmer OS Siemreap', 'Khmer OS', 'Battambang', 'Noto Sans Khmer', sans-serif;
+    font-family: var(--font-khmer) !important;
   }
-}
-
-/* When html has font-khmer class, apply Khmer font globally */
-html.font-khmer,
-html.font-khmer body,
-html.font-khmer * {
-  font-family: 'Khmer OS Siemreap', 'Khmer OS', 'Battambang', 'Noto Sans Khmer', sans-serif;
 }

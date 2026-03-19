@@ -254,7 +254,6 @@ const translations: Record<string, { en: string; km: string }> = {
   'billing.currentPlan': { en: 'Current Plan', km: 'គម្រោងបច្ចុប្បន្ន' },
   'billing.upgrade': { en: 'Upgrade Plan', km: 'ដំឡើងគម្រោង' },
   'billing.renew': { en: 'Renew Plan', km: 'បន្តគម្រោង' },
-  'billing.expiresOn': { en: 'Expires on', km: 'ផុតកំណត់នៅ' },
   'billing.scanToPay': { en: 'Scan KHQR to pay', km: 'ស្កេន KHQR ដើម្បីបង់ប្រាក់' },
 
   // === Settings ===
@@ -550,6 +549,22 @@ const translations: Record<string, { en: string; km: string }> = {
   'billing.afterPaymentNote': { en: 'After payment, the platform owner will verify and approve. Your current plan stays active during review.', km: 'បន្ទាប់ពីបង់ប្រាក់ ម្ចាស់វេទិកានឹងផ្ទៀងផ្ទាត់ និងអនុម័ត។ គម្រោងបច្ចុប្បន្នរបស់អ្នកនៅសកម្មកំឡុងពេលពិនិត្យ។' },
   'billing.completedPayment': { en: "I've completed payment", km: 'ខ្ញុំបានបង់ប្រាក់រួចរាល់' },
   'billing.requestSubmitted': { en: 'Request submitted! The platform owner will review shortly.', km: 'សំណើបានដាក់ស្នើ! ម្ចាស់វេទិកានឹងពិនិត្យក្នុងពេលឆាប់ៗ។' },
+  'billing.planHistory': { en: 'Plan History', km: 'ប្រវត្តិគម្រោង' },
+  'billing.expiresIn': { en: 'Expires in', km: 'ផុតកំណត់ក្នុង' },
+  'billing.days': { en: 'days', km: 'ថ្ងៃ' },
+  'billing.expired': { en: 'Expired', km: 'ផុតកំណត់' },
+  'billing.expiresOn': { en: 'Expires on', km: 'ផុតកំណត់នៅ' },
+  'billing.startedOn': { en: 'Started on', km: 'ចាប់ផ្តើមនៅ' },
+  'billing.action.subscribed': { en: 'Subscribed', km: 'បានជាវ' },
+  'billing.action.upgraded': { en: 'Upgraded', km: 'បានដំឡើង' },
+  'billing.action.downgraded': { en: 'Downgraded', km: 'បានបន្ថយ' },
+  'billing.action.renewed': { en: 'Renewed', km: 'បានបន្ត' },
+  'billing.action.expired': { en: 'Expired', km: 'ផុតកំណត់' },
+  'billing.action.cancelled': { en: 'Cancelled', km: 'បានលុបចោល' },
+  'billing.noHistory': { en: 'No plan history yet', km: 'មិនមានប្រវត្តិគម្រោងនៅឡើយ' },
+  'billing.dueDateAlert': { en: 'Your plan expires soon! Renew to keep all features.', km: 'គម្រោងរបស់អ្នកនឹងផុតកំណត់ឆាប់ៗ! បន្តដើម្បីរក្សាមុខងារទាំងអស់។' },
+  'billing.expiredAlert': { en: 'Your plan has expired. You have been moved to the Free plan.', km: 'គម្រោងរបស់អ្នកបានផុតកំណត់។ អ្នកត្រូវបានផ្លាស់ទៅគម្រោងឥតគិតថ្លៃ។' },
+  'billing.renewNow': { en: 'Renew Now', km: 'បន្តឥឡូវ' },
 
   // === Settings (additional) ===
   'settings.manageShop': { en: 'Manage your shop profile and branding', km: 'គ្រប់គ្រងប្រវត្តិរូប និងម៉ាកហាងរបស់អ្នក' },
@@ -590,6 +605,17 @@ const translations: Record<string, { en: string; km: string }> = {
   'adminDash.totalRevenue': { en: 'Total Revenue', km: 'ចំណូលសរុប' },
   'adminDash.packages': { en: 'Packages', km: 'កញ្ចប់' },
   'adminDash.planDistribution': { en: 'Plan Distribution', km: 'ការចែកចាយគម្រោង' },
+  'adminDash.recentPlanChanges': { en: 'Recent Plan Changes', km: 'ការផ្លាស់ប្តូរគម្រោងថ្មីៗ' },
+  'adminDash.nearDue': { en: 'Expiring Soon', km: 'នឹងផុតកំណត់ឆាប់ៗ' },
+  'adminDash.expiredGrace': { en: 'Expired (Grace Period)', km: 'ផុតកំណត់ (រយៈពេលអនុគ្រោះ)' },
+  'adminDash.daysLeft': { en: 'days left', km: 'ថ្ងៃទៀត' },
+  'adminDash.daysOverdue': { en: 'days overdue', km: 'ថ្ងៃហួស' },
+  'adminDash.graceDaysLeft': { en: 'grace days left', km: 'ថ្ងៃអនុគ្រោះនៅសល់' },
+  'adminDash.lastActive': { en: 'Last Active', km: 'សកម្មចុងក្រោយ' },
+  'adminDash.shopActivity': { en: 'Shop Activity', km: 'សកម្មភាពហាង' },
+  'adminDash.neverActive': { en: 'Never', km: 'មិនដែល' },
+  'adminDash.noChanges': { en: 'No recent plan changes', km: 'មិនមានការផ្លាស់ប្តូរគម្រោងថ្មីៗ' },
+  'adminDash.noDue': { en: 'No shops expiring soon', km: 'គ្មានហាងនឹងផុតកំណត់ឆាប់ៗ' },
 
   // === Admin Packages ===
   'adminPkg.title': { en: 'Packages', km: 'កញ្ចប់' },
@@ -712,16 +738,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     if (saved === 'en' || saved === 'km') setLangState(saved)
   }, [])
 
-  // Apply font-khmer class to html element when in Khmer mode
+  // Set lang attribute on html element — CSS handles font switching
   useEffect(() => {
-    const html = document.documentElement
-    if (lang === 'km') {
-      html.classList.add('font-khmer')
-      html.setAttribute('lang', 'km')
-    } else {
-      html.classList.remove('font-khmer')
-      html.setAttribute('lang', 'en')
-    }
+    document.documentElement.setAttribute('lang', lang)
   }, [lang])
 
   function setLang(l: Lang) {

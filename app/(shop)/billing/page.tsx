@@ -8,7 +8,7 @@ import { Modal } from '@/components/ui/modal'
 import { cn, formatCurrency } from '@/lib/utils'
 import {
   CreditCard, Check, QrCode, Clock, ArrowUpRight, RefreshCw,
-  Shield, Zap, Sparkles, ChevronRight,
+  Shield, Zap, Sparkles, ChevronRight, AlertTriangle, History,
 } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
 
@@ -22,6 +22,17 @@ interface PackageOption {
   isDefault: boolean
 }
 
+interface PlanHistoryEntry {
+  id: string
+  packageName: string
+  billingCycle: string
+  price: number
+  action: string
+  startDate: string
+  endDate: string | null
+  createdAt: string
+}
+
 interface BillingInfo {
   plan: string
   packageId: string
@@ -32,10 +43,15 @@ interface BillingInfo {
   annualPrice: number
   modules: string[]
   upgradeStatus: string
+  planExpiresAt: string | null
+  planStartedAt: string | null
+  daysUntilExpiry: number | null
+  daysUntilDowngrade: number | null
   requestedPackage: { id: string; name: string; monthlyPrice: number; annualPrice: number } | null
   requestedBillingCycle: string | null
   packages: PackageOption[]
   khqrImage: string | null
+  planHistory: PlanHistoryEntry[]
 }
 
 export default function BillingPage() {
@@ -135,6 +151,45 @@ export default function BillingPage() {
         </div>
       )}
 
+      {/* Expiration Alert - plan expired but still in 7-day grace period */}
+      {billing.daysUntilExpiry !== null && billing.daysUntilExpiry <= 0 && billing.daysUntilDowngrade !== null && billing.daysUntilDowngrade > 0 && (
+        <div className="rounded-xl bg-red-50 border border-red-200 p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-red-800">{t('billing.expired')}</p>
+            <p className="text-sm text-red-700 mt-0.5">
+              {lang === 'en'
+                ? `Your plan has expired! You have ${billing.daysUntilDowngrade} days to renew before auto-downgrade to Free plan.`
+                : `គម្រោងរបស់អ្នកបានផុតកំណត់! អ្នកមាន ${billing.daysUntilDowngrade} ថ្ងៃដើម្បីបន្តមុនពេលបន្ថយស្វ័យប្រវត្តិទៅគម្រោងឥតគិតថ្លៃ។`}
+            </p>
+          </div>
+          <Button size="sm" variant="destructive" onClick={openRenew}>{t('billing.renewNow')}</Button>
+        </div>
+      )}
+      {/* Already auto-downgraded */}
+      {billing.daysUntilExpiry !== null && billing.daysUntilExpiry <= 0 && (billing.daysUntilDowngrade === null || billing.daysUntilDowngrade <= 0) && (
+        <div className="rounded-xl bg-red-50 border border-red-200 p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-red-800">{t('billing.expired')}</p>
+            <p className="text-sm text-red-700 mt-0.5">{t('billing.expiredAlert')}</p>
+          </div>
+          <Button size="sm" variant="destructive" onClick={openRenew}>{t('billing.renewNow')}</Button>
+        </div>
+      )}
+      {billing.daysUntilExpiry !== null && billing.daysUntilExpiry > 0 && billing.daysUntilExpiry <= 7 && (
+        <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-amber-800">
+              {t('billing.expiresIn')} {billing.daysUntilExpiry} {t('billing.days')}
+            </p>
+            <p className="text-sm text-amber-700 mt-0.5">{t('billing.dueDateAlert')}</p>
+          </div>
+          <Button size="sm" onClick={openRenew}>{t('billing.renewNow')}</Button>
+        </div>
+      )}
+
       {/* Current Plan Card */}
       <Card>
         <CardHeader>
@@ -165,6 +220,29 @@ export default function BillingPage() {
               </>
             )}
           </div>
+
+          {/* Plan dates */}
+          {!isFree && billing.planExpiresAt && (
+            <div className="flex items-center gap-4 text-sm">
+              {billing.planStartedAt && (
+                <span className="text-gray-500">
+                  {t('billing.startedOn')}: <span className="font-medium text-gray-700">
+                    {new Date(billing.planStartedAt).toLocaleDateString(lang === 'km' ? 'km-KH' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                  </span>
+                </span>
+              )}
+              <span className={cn(
+                billing.daysUntilExpiry !== null && billing.daysUntilExpiry <= 7 ? 'text-red-600 font-semibold' : 'text-gray-500'
+              )}>
+                {t('billing.expiresOn')}: <span className="font-medium">
+                  {new Date(billing.planExpiresAt).toLocaleDateString(lang === 'km' ? 'km-KH' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                </span>
+                {billing.daysUntilExpiry !== null && billing.daysUntilExpiry > 0 && (
+                  <span className="ml-1 text-xs opacity-70">({billing.daysUntilExpiry} {t('billing.days')})</span>
+                )}
+              </span>
+            </div>
+          )}
 
           {/* Usage */}
           <div>
@@ -306,6 +384,65 @@ export default function BillingPage() {
           })}
         </div>
       </div>
+
+      {/* Plan History */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="h-5 w-5 text-gray-400" />
+            {t('billing.planHistory')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {(!billing.planHistory || billing.planHistory.length === 0) ? (
+            <p className="text-sm text-gray-400 text-center py-4">{t('billing.noHistory')}</p>
+          ) : (
+            <div className="space-y-0">
+              {billing.planHistory.map((entry, i) => {
+                const actionKey = `billing.action.${entry.action}` as string
+                const actionLabel = t(actionKey)
+                const actionColors: Record<string, string> = {
+                  subscribed: 'bg-green-100 text-green-700',
+                  upgraded: 'bg-blue-100 text-blue-700',
+                  downgraded: 'bg-amber-100 text-amber-700',
+                  renewed: 'bg-emerald-100 text-emerald-700',
+                  expired: 'bg-red-100 text-red-700',
+                  cancelled: 'bg-gray-100 text-gray-600',
+                }
+                return (
+                  <div key={entry.id} className="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0">
+                    {/* Timeline dot */}
+                    <div className="flex flex-col items-center">
+                      <div className={cn('w-2.5 h-2.5 rounded-full',
+                        entry.action === 'expired' ? 'bg-red-400' :
+                        entry.action === 'downgraded' ? 'bg-amber-400' :
+                        'bg-green-400'
+                      )} />
+                      {i < billing.planHistory.length - 1 && <div className="w-px h-8 bg-gray-100 mt-1" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm text-gray-900">{entry.packageName}</span>
+                        <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-medium', actionColors[entry.action] || 'bg-gray-100 text-gray-600')}>
+                          {actionLabel}
+                        </span>
+                        <span className="text-xs text-gray-400 capitalize">{entry.billingCycle}</span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
+                        <span>
+                          {new Date(entry.startDate).toLocaleDateString(lang === 'km' ? 'km-KH' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          {entry.endDate && ` — ${new Date(entry.endDate).toLocaleDateString(lang === 'km' ? 'km-KH' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
+                        </span>
+                        {entry.price > 0 && <span className="font-medium text-gray-500">{formatCurrency(entry.price)}</span>}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Upgrade Modal */}
       <Modal
