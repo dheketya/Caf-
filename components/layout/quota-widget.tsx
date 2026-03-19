@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 import { differenceInDays } from 'date-fns'
 
 interface QuotaWidgetProps {
@@ -10,11 +11,13 @@ interface QuotaWidgetProps {
 }
 
 export function QuotaWidget({ used, limit, resetDate }: QuotaWidgetProps) {
+  const { t } = useI18n()
+
   if (limit === null) {
     return (
       <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-50 text-green-700 text-sm">
         <span className="font-medium">{used}</span>
-        <span className="text-green-500">sales · Unlimited plan</span>
+        <span className="text-green-500">{t('quota.sales')} · {t('quota.salesUnlimited')}</span>
       </div>
     )
   }
@@ -42,12 +45,12 @@ export function QuotaWidget({ used, limit, resetDate }: QuotaWidgetProps) {
           'text-amber-500': color === 'amber',
           'text-red-500': color === 'red',
         })}>
-          sales used
+          {t('quota.salesUsed')}
         </span>
       </div>
       <span className="text-gray-400">·</span>
       <span className="text-gray-500">
-        {daysUntilReset} days until reset
+        {daysUntilReset} {t('quota.daysUntilReset')}
       </span>
       <div className="ml-2 w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
         <div

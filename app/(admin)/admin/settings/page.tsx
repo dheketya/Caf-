@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Upload, QrCode, Image as ImageIcon } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 
 export default function AdminSettingsPage() {
   const [form, setForm] = useState({
@@ -16,6 +18,7 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { t, bilingual, lang } = useI18n()
 
   useEffect(() => {
     fetch('/api/admin/settings')
@@ -69,23 +72,28 @@ export default function AdminSettingsPage() {
     }
   }
 
+  const [mainTitle, subTitle] = bilingual('adminSettings.title')
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Platform Settings</h1>
-        <p className="text-sm text-gray-500">Manage payment, contact, and platform configuration</p>
+        <h1 className={cn('text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>
+          {mainTitle}
+          <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{subTitle}</span>
+        </h1>
+        <p className="text-sm text-gray-500">{t('adminSettings.manage')}</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <QrCode className="h-5 w-5 text-blue-600" />
-            KHQR Payment Code
+            {t('adminSettings.khqrTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-gray-500 mb-4">
-            This QR code is shown to new shops when they register for a paid plan.
+            {t('adminSettings.khqrDesc')}
           </p>
           <div className="flex items-start gap-4">
             <div className="h-40 w-40 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50 flex-shrink-0">
@@ -109,7 +117,7 @@ export default function AdminSettingsPage() {
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <Upload className="h-4 w-4 mr-1" /> Upload KHQR
+                <Upload className="h-4 w-4 mr-1" /> {t('adminSettings.uploadKHQR')}
               </Button>
               {khqrPreview && (
                 <Button
@@ -122,7 +130,7 @@ export default function AdminSettingsPage() {
                   Remove
                 </Button>
               )}
-              <p className="text-xs text-gray-400">PNG, JPG. Recommended: 400x400px or higher</p>
+              <p className="text-xs text-gray-400">{t('adminSettings.khqrHint')}</p>
             </div>
           </div>
         </CardContent>
@@ -130,19 +138,19 @@ export default function AdminSettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Contact & Support</CardTitle>
+          <CardTitle>{t('adminSettings.contactSupport')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSave} className="space-y-4">
             <Input
-              label="Telegram Username"
+              label={t('adminSettings.telegramUsername')}
               value={form.telegramUsername}
               onChange={(e) => setForm({ ...form, telegramUsername: e.target.value })}
               placeholder="cafeos_support"
             />
 
             <Input
-              label="Telegram Group Link"
+              label={t('adminSettings.telegramGroupLink')}
               value={form.telegramGroupLink}
               onChange={(e) => setForm({ ...form, telegramGroupLink: e.target.value })}
               placeholder="https://t.me/cafeos_group"
@@ -150,10 +158,10 @@ export default function AdminSettingsPage() {
 
             <div className="flex items-center gap-3">
               <Button type="submit" disabled={saving}>
-                {saving ? 'Saving...' : 'Save Settings'}
+                {saving ? t('settings.saving') : t('adminSettings.saveSettings')}
               </Button>
               {saved && (
-                <span className="text-sm text-green-600 font-medium">Saved successfully!</span>
+                <span className="text-sm text-green-600 font-medium">{t('settings.savedSuccess')}</span>
               )}
             </div>
           </form>

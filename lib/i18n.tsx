@@ -1,0 +1,762 @@
+'use client'
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+
+export type Lang = 'en' | 'km'
+
+interface I18nContextType {
+  lang: Lang
+  setLang: (lang: Lang) => void
+  t: (key: string) => string
+  // Returns [main, subtitle] based on current lang
+  bilingual: (key: string) => [string, string]
+}
+
+const I18nContext = createContext<I18nContextType | null>(null)
+
+export function useI18n() {
+  const ctx = useContext(I18nContext)
+  if (!ctx) throw new Error('useI18n must be used within I18nProvider')
+  return ctx
+}
+
+// Translation dictionary: key -> { en, km }
+const translations: Record<string, { en: string; km: string }> = {
+  // === Nav / Sidebar ===
+  'nav.dashboard': { en: 'Dashboard', km: 'ផ្ទាំងគ្រប់គ្រង' },
+  'nav.pos': { en: 'POS', km: 'ការលក់' },
+  'nav.products': { en: 'Products', km: 'ផលិតផល' },
+  'nav.stock': { en: 'Stock', km: 'សន្និធិ' },
+  'nav.income': { en: 'Income & Expense', km: 'ចំណូល និងចំណាយ' },
+  'nav.customers': { en: 'Customers', km: 'អតិថិជន' },
+  'nav.reports': { en: 'Reports', km: 'របាយការណ៍' },
+  'nav.users': { en: 'Users', km: 'អ្នកប្រើប្រាស់' },
+  'nav.billing': { en: 'Billing', km: 'វិក្កយបត្រ' },
+  'nav.chat': { en: 'Chat', km: 'ផ្ញើសារ' },
+  'nav.settings': { en: 'Settings', km: 'ការកំណត់' },
+  'nav.kitchen': { en: 'Kitchen Display', km: 'ផ្ទាំងផ្ទះបាយ' },
+  'nav.collapse': { en: 'Collapse', km: 'បង្រួម' },
+  'nav.expand': { en: 'Expand', km: 'ពង្រីក' },
+
+  // === Admin Nav ===
+  'admin.dashboard': { en: 'Dashboard', km: 'ផ្ទាំងគ្រប់គ្រង' },
+  'admin.packages': { en: 'Packages', km: 'កញ្ចប់' },
+  'admin.shops': { en: 'Shops', km: 'ហាង' },
+  'admin.reports': { en: 'Reports', km: 'របាយការណ៍' },
+  'admin.messages': { en: 'Messages', km: 'សារ' },
+  'admin.settings': { en: 'Settings', km: 'ការកំណត់' },
+  'admin.title': { en: 'CaféOS Admin', km: 'CaféOS អ្នកគ្រប់គ្រង' },
+
+  // === Header ===
+  'header.logout': { en: 'Logout', km: 'ចាកចេញ' },
+  'header.notifications': { en: 'Notifications', km: 'ការជូនដំណឹង' },
+  'header.quota': { en: 'Sales Quota', km: 'កូតាលក់' },
+  'header.quotaExceeded': { en: 'Quota exceeded! Upgrade your plan.', km: 'កូតាអស់! សូមដំឡើងគម្រោង។' },
+
+  // === Auth ===
+  'auth.login': { en: 'Sign In', km: 'ចូល' },
+  'auth.register': { en: 'Register Shop', km: 'ចុះឈ្មោះហាង' },
+  'auth.email': { en: 'Email', km: 'អ៊ីមែល' },
+  'auth.password': { en: 'Password', km: 'ពាក្យសម្ងាត់' },
+  'auth.forgotPassword': { en: 'Forgot Password?', km: 'ភ្លេចពាក្យសម្ងាត់?' },
+  'auth.noAccount': { en: "Don't have an account?", km: 'មិនមានគណនី?' },
+  'auth.hasAccount': { en: 'Already have an account?', km: 'មានគណនីរួចហើយ?' },
+  'auth.shopName': { en: 'Shop Name', km: 'ឈ្មោះហាង' },
+  'auth.ownerName': { en: 'Owner Name', km: 'ឈ្មោះម្ចាស់' },
+  'auth.phone': { en: 'Phone', km: 'ទូរស័ព្ទ' },
+  'auth.selectPlan': { en: 'Select a Plan', km: 'ជ្រើសរើសគម្រោង' },
+  'auth.registerBtn': { en: 'Register', km: 'ចុះឈ្មោះ' },
+  'auth.signingIn': { en: 'Signing in...', km: 'កំពុងចូល...' },
+  'auth.registering': { en: 'Registering...', km: 'កំពុងចុះឈ្មោះ...' },
+  'auth.usernameOrEmail': { en: 'Email or Username', km: 'អ៊ីមែល ឬ ឈ្មោះអ្នកប្រើ' },
+  'auth.welcomeBack': { en: 'Welcome back', km: 'សូមស្វាគមន៍ការត្រឡប់មកវិញ' },
+  'auth.signInDesc': { en: 'Sign in to your account', km: 'ចូលទៅគណនីរបស់អ្នក' },
+  'auth.createShop': { en: 'Create your shop', km: 'បង្កើតហាងរបស់អ្នក' },
+  'auth.createShopDesc': { en: 'Get started with CaféOS', km: 'ចាប់ផ្តើមជាមួយ CaféOS' },
+  'auth.paymentRequired': { en: 'Payment Required', km: 'ទាមទារការបង់ប្រាក់' },
+  'auth.scanQR': { en: 'Scan KHQR to pay', km: 'ស្កេន KHQR ដើម្បីបង់ប្រាក់' },
+  'auth.free': { en: 'Free', km: 'ឥតគិតថ្លៃ' },
+  'auth.perYear': { en: '/year', km: '/ឆ្នាំ' },
+  'auth.perMonth': { en: '/month', km: '/ខែ' },
+  'auth.salesMonth': { en: 'sales/month', km: 'ការលក់/ខែ' },
+  'auth.unlimited': { en: 'Unlimited', km: 'គ្មានកំណត់' },
+  'auth.current': { en: 'Current', km: 'បច្ចុប្បន្ន' },
+  'auth.popular': { en: 'Popular', km: 'ពេញនិយម' },
+
+  // === POS ===
+  'pos.title': { en: 'Point of Sale', km: 'ការលក់' },
+  'pos.search': { en: 'Search products...', km: 'ស្វែងរកផលិតផល...' },
+  'pos.all': { en: 'All', km: 'ទាំងអស់' },
+  'pos.cart': { en: 'Current Order', km: 'ការបញ្ជាទិញបច្ចុប្បន្ន' },
+  'pos.emptyCart': { en: 'Cart is empty', km: 'រទេះទទេ' },
+  'pos.addItems': { en: 'Add items to get started', km: 'បន្ថែមទំនិញដើម្បីចាប់ផ្តើម' },
+  'pos.subtotal': { en: 'Subtotal', km: 'សរុបរង' },
+  'pos.discount': { en: 'Discount', km: 'បញ្ចុះតម្លៃ' },
+  'pos.loyaltyDiscount': { en: 'Loyalty Discount', km: 'បញ្ចុះតម្លៃភាពស្មោះត្រង់' },
+  'pos.total': { en: 'Total', km: 'សរុប' },
+  'pos.charge': { en: 'Charge', km: 'គិតប្រាក់' },
+  'pos.customer': { en: 'Customer', km: 'អតិថិជន' },
+  'pos.customerPhone': { en: 'Customer Phone', km: 'ទូរស័ព្ទអតិថិជន' },
+  'pos.findCustomer': { en: 'Find', km: 'ស្វែងរក' },
+  'pos.newCustomer': { en: 'New Customer', km: 'អតិថិជនថ្មី' },
+  'pos.selectSize': { en: 'Select Size', km: 'ជ្រើសរើសទំហំ' },
+  'pos.selectSugar': { en: 'Sugar Level', km: 'កម្រិតស្ករ' },
+  'pos.addToCart': { en: 'Add to Cart', km: 'បន្ថែមទៅរទេះ' },
+  'pos.clearCart': { en: 'Clear', km: 'សម្អាត' },
+  'pos.qty': { en: 'Qty', km: 'ចំនួន' },
+  'pos.payment': { en: 'Payment', km: 'ការបង់ប្រាក់' },
+  'pos.paymentMethod': { en: 'Payment Method', km: 'វិធីបង់ប្រាក់' },
+  'pos.cash': { en: 'Cash', km: 'សាច់ប្រាក់' },
+  'pos.bank': { en: 'Bank Transfer', km: 'ផ្ទេរធនាគារ' },
+  'pos.cashAndBank': { en: 'Cash + Bank', km: 'សាច់ប្រាក់ + ធនាគារ' },
+  'pos.amountUSD': { en: 'Amount (USD)', km: 'ចំនួន (ដុល្លារ)' },
+  'pos.amountKHR': { en: 'Amount (KHR)', km: 'ចំនួន (រៀល)' },
+  'pos.cashUSD': { en: 'Cash USD', km: 'សាច់ប្រាក់ ដុល្លារ' },
+  'pos.cashKHR': { en: 'Cash KHR', km: 'សាច់ប្រាក់ រៀល' },
+  'pos.bankAmount': { en: 'Bank Amount', km: 'ចំនួនធនាគារ' },
+  'pos.change': { en: 'Change', km: 'ប្រាក់អាប់' },
+  'pos.tendered': { en: 'Tendered', km: 'ប្រាក់ទទួល' },
+  'pos.completeSale': { en: 'Complete Sale', km: 'បញ្ចប់ការលក់' },
+  'pos.processing': { en: 'Processing...', km: 'កំពុងដំណើរការ...' },
+  'pos.exact': { en: 'Exact', km: 'ពិតប្រាកដ' },
+  'pos.printInvoice': { en: 'Print Invoice', km: 'បោះពុម្ពវិក្កយបត្រ' },
+  'pos.newOrder': { en: 'New Order', km: 'ការបញ្ជាទិញថ្មី' },
+  'pos.orderComplete': { en: 'Order Complete!', km: 'ការបញ្ជាទិញបានបញ្ចប់!' },
+  'pos.invoice': { en: 'Invoice', km: 'វិក្កយបត្រ' },
+  'pos.edit': { en: 'Edit', km: 'កែសម្រួល' },
+  'pos.delete': { en: 'Delete', km: 'លុប' },
+  'pos.confirmDelete': { en: 'Delete this product?', km: 'លុបផលិតផលនេះ?' },
+  'pos.cancel': { en: 'Cancel', km: 'បោះបង់' },
+  'pos.confirm': { en: 'Confirm', km: 'បញ្ជាក់' },
+  'pos.visits': { en: 'visits', km: 'ដង' },
+  'pos.loyaltyProgress': { en: 'Loyalty Progress', km: 'វឌ្ឍនភាពភាពស្មោះត្រង់' },
+  'pos.discountApplied': { en: 'Loyalty discount applied!', km: 'បញ្ចុះតម្លៃភាពស្មោះត្រង់បានអនុវត្ត!' },
+  'pos.productDiscount': { en: 'Product Discount', km: 'បញ្ចុះតម្លៃផលិតផល' },
+  'pos.manualDiscount': { en: 'Manual Discount', km: 'បញ្ចុះតម្លៃដោយដៃ' },
+  'pos.beforeDiscount': { en: 'Before Discount', km: 'មុនបញ្ចុះតម្លៃ' },
+  'pos.size': { en: 'Size', km: 'ទំហំ' },
+  'pos.sugar': { en: 'Sugar', km: 'ស្ករ' },
+  'pos.off': { en: 'OFF', km: 'បញ្ចុះ' },
+  'pos.from': { en: 'from', km: 'ពី' },
+  'pos.noDiscount': { en: 'No discount', km: 'គ្មានបញ្ចុះតម្លៃ' },
+  'pos.fixed': { en: 'Fixed', km: 'ថេរ' },
+  'pos.itemPrice': { en: 'Item price', km: 'តម្លៃទំនិញ' },
+  'pos.customerOptional': { en: 'Customer (optional)', km: 'អតិថិជន (ជម្រើស)' },
+  'pos.customerNotFound': { en: 'No customer found with this number. Add as new?', km: 'រកមិនឃើញអតិថិជនជាមួយលេខនេះ។ បន្ថែមថ្មី?' },
+  'pos.remaining': { en: 'Remaining', km: 'នៅសល់' },
+  'pos.invoicePreview': { en: 'Invoice Preview', km: 'មើលវិក្កយបត្រ' },
+  'pos.tel': { en: 'Tel', km: 'ទូរស័ព្ទ' },
+  'pos.loyaltyReward': { en: 'Loyalty Reward!', km: 'រង្វាន់ភាពស្មោះត្រង់!' },
+  'pos.offThisOrder': { en: 'off this order', km: 'បញ្ចុះលើការបញ្ជាទិញនេះ' },
+  'pos.toReward': { en: 'to reward', km: 'ដើម្បីទទួលរង្វាន់' },
+  'pos.customize': { en: 'Customize', km: 'ប្ដូរតាមបំណង' },
+  'pos.dollar': { en: 'Dollar', km: 'ដុល្លារ' },
+  'pos.riel': { en: 'Riel', km: 'រៀល' },
+  'pos.customUSD': { en: '$ Custom', km: '$ ផ្ទាល់ខ្លួន' },
+  'pos.customKHR': { en: '៛ Custom', km: '៛ ផ្ទាល់ខ្លួន' },
+  'pos.print': { en: 'Print', km: 'បោះពុម្ព' },
+  'pos.save': { en: 'Save', km: 'សន្សំ' },
+  'pos.loyaltyLabel': { en: 'Loyalty', km: 'ភាពស្មោះត្រង់' },
+  'pos.shop': { en: 'Shop', km: 'ហាង' },
+
+  // === Products ===
+  'products.title': { en: 'Products', km: 'ផលិតផល' },
+  'products.add': { en: 'Add Product', km: 'បន្ថែមផលិតផល' },
+  'products.edit': { en: 'Edit Product', km: 'កែសម្រួលផលិតផល' },
+  'products.name': { en: 'Product Name', km: 'ឈ្មោះផលិតផល' },
+  'products.price': { en: 'Base Price (USD)', km: 'តម្លៃគោល (ដុល្លារ)' },
+  'products.category': { en: 'Category', km: 'ប្រភេទ' },
+  'products.addCategory': { en: 'Add Category', km: 'បន្ថែមប្រភេទ' },
+  'products.hasSugar': { en: 'Has Sugar Level', km: 'មានកម្រិតស្ករ' },
+  'products.hasSize': { en: 'Has Size Options', km: 'មានជម្រើសទំហំ' },
+  'products.sizePrice': { en: 'Size Price', km: 'តម្លៃទំហំ' },
+  'products.noProducts': { en: 'No products yet', km: 'មិនមានផលិតផលនៅឡើយ' },
+  'products.search': { en: 'Search products...', km: 'ស្វែងរកផលិតផល...' },
+  'products.save': { en: 'Save', km: 'រក្សាទុក' },
+  'products.saving': { en: 'Saving...', km: 'កំពុងរក្សាទុក...' },
+  'products.delete': { en: 'Delete', km: 'លុប' },
+  'products.confirmDelete': { en: 'Are you sure you want to delete this product?', km: 'តើអ្នកពិតជាចង់លុបផលិតផលនេះមែនទេ?' },
+  'products.discountPercent': { en: 'Discount %', km: 'បញ្ចុះតម្លៃ %' },
+  'products.image': { en: 'Image', km: 'រូបភាព' },
+
+  // === Stock ===
+  'stock.title': { en: 'Stock Management', km: 'គ្រប់គ្រងសន្និធិ' },
+  'stock.add': { en: 'Add Stock Item', km: 'បន្ថែមសន្និធិ' },
+  'stock.name': { en: 'Item Name', km: 'ឈ្មោះសម្ភារៈ' },
+  'stock.quantity': { en: 'Quantity', km: 'ចំនួន' },
+  'stock.unit': { en: 'Unit', km: 'ឯកតា' },
+  'stock.minQty': { en: 'Min Quantity', km: 'ចំនួនអប្បបរមា' },
+  'stock.low': { en: 'Low Stock', km: 'សន្និធិទាប' },
+  'stock.inStock': { en: 'In Stock', km: 'មានក្នុងសន្និធិ' },
+  'stock.outOfStock': { en: 'Out of Stock', km: 'អស់សន្និធិ' },
+
+  // === Income & Expense ===
+  'income.title': { en: 'Income & Expense', km: 'ចំណូល និងចំណាយ' },
+  'income.addIncome': { en: 'Add Income', km: 'បន្ថែមចំណូល' },
+  'income.addExpense': { en: 'Add Expense', km: 'បន្ថែមចំណាយ' },
+  'income.income': { en: 'Income', km: 'ចំណូល' },
+  'income.expense': { en: 'Expense', km: 'ចំណាយ' },
+  'income.description': { en: 'Description', km: 'ការពិពណ៌នា' },
+  'income.amount': { en: 'Amount', km: 'ចំនួន' },
+  'income.date': { en: 'Date', km: 'កាលបរិច្ឆេទ' },
+  'income.type': { en: 'Type', km: 'ប្រភេទ' },
+  'income.paymentMethod': { en: 'Payment Method', km: 'វិធីបង់ប្រាក់' },
+  'income.filter': { en: 'Filter', km: 'តម្រង' },
+  'income.all': { en: 'All', km: 'ទាំងអស់' },
+  'income.month': { en: 'Month', km: 'ខែ' },
+  'income.totalIncome': { en: 'Total Income', km: 'ចំណូលសរុប' },
+  'income.totalExpense': { en: 'Total Expense', km: 'ចំណាយសរុប' },
+  'income.net': { en: 'Net', km: 'សុទ្ធ' },
+  'income.currency': { en: 'Currency', km: 'រូបិយប័ណ្ណ' },
+
+  // === Customers ===
+  'customers.title': { en: 'Customers', km: 'អតិថិជន' },
+  'customers.add': { en: 'Add Customer', km: 'បន្ថែមអតិថិជន' },
+  'customers.edit': { en: 'Edit Customer', km: 'កែសម្រួលអតិថិជន' },
+  'customers.phone': { en: 'Phone Number', km: 'លេខទូរស័ព្ទ' },
+  'customers.name': { en: 'Name', km: 'ឈ្មោះ' },
+  'customers.totalVisits': { en: 'Total Visits', km: 'ការមកសរុប' },
+  'customers.totalSpent': { en: 'Total Spent', km: 'ចំណាយសរុប' },
+  'customers.lastVisit': { en: 'Last Visit', km: 'ការមកចុងក្រោយ' },
+  'customers.history': { en: 'Purchase History', km: 'ប្រវត្តិការទិញ' },
+  'customers.search': { en: 'Search customers...', km: 'ស្វែងរកអតិថិជន...' },
+  'customers.noCustomers': { en: 'No customers yet', km: 'មិនមានអតិថិជននៅឡើយ' },
+  'customers.loyalty': { en: 'Loyalty', km: 'ភាពស្មោះត្រង់' },
+  'customers.delete': { en: 'Delete', km: 'លុប' },
+  'customers.confirmDelete': { en: 'Delete this customer?', km: 'លុបអតិថិជននេះ?' },
+
+  // === Reports ===
+  'reports.title': { en: 'Reports', km: 'របាយការណ៍' },
+  'reports.sales': { en: 'Sales', km: 'ការលក់' },
+  'reports.revenue': { en: 'Revenue', km: 'ចំណូល' },
+  'reports.orders': { en: 'Orders', km: 'ការបញ្ជាទិញ' },
+  'reports.topProducts': { en: 'Top Products', km: 'ផលិតផលកំពូល' },
+  'reports.daily': { en: 'Daily', km: 'ប្រចាំថ្ងៃ' },
+  'reports.weekly': { en: 'Weekly', km: 'ប្រចាំសប្ដាហ៍' },
+  'reports.monthly': { en: 'Monthly', km: 'ប្រចាំខែ' },
+  'reports.paymentBreakdown': { en: 'Payment Breakdown', km: 'ការបែងចែកការបង់ប្រាក់' },
+  'reports.discountGiven': { en: 'Discount Given', km: 'បញ្ចុះតម្លៃដែលបានផ្តល់' },
+
+  // === Users ===
+  'users.title': { en: 'Users', km: 'អ្នកប្រើប្រាស់' },
+  'users.add': { en: 'Add User', km: 'បន្ថែមអ្នកប្រើប្រាស់' },
+  'users.username': { en: 'Username', km: 'ឈ្មោះអ្នកប្រើ' },
+  'users.role': { en: 'Role', km: 'តួនាទី' },
+  'users.staff': { en: 'Staff', km: 'បុគ្គលិក' },
+  'users.manager': { en: 'Manager', km: 'អ្នកគ្រប់គ្រង' },
+  'users.kitchenStaff': { en: 'Kitchen', km: 'ផ្ទះបាយ' },
+  'users.password': { en: 'Password', km: 'ពាក្យសម្ងាត់' },
+  'users.resetPassword': { en: 'Reset Password', km: 'កំណត់ពាក្យសម្ងាត់ឡើងវិញ' },
+  'users.loginAs': { en: 'Login as', km: 'ចូលជា' },
+  'users.delete': { en: 'Delete', km: 'លុប' },
+
+  // === Billing ===
+  'billing.title': { en: 'Billing', km: 'វិក្កយបត្រ' },
+  'billing.currentPlan': { en: 'Current Plan', km: 'គម្រោងបច្ចុប្បន្ន' },
+  'billing.upgrade': { en: 'Upgrade Plan', km: 'ដំឡើងគម្រោង' },
+  'billing.renew': { en: 'Renew Plan', km: 'បន្តគម្រោង' },
+  'billing.expiresOn': { en: 'Expires on', km: 'ផុតកំណត់នៅ' },
+  'billing.scanToPay': { en: 'Scan KHQR to pay', km: 'ស្កេន KHQR ដើម្បីបង់ប្រាក់' },
+
+  // === Settings ===
+  'settings.title': { en: 'Settings', km: 'ការកំណត់' },
+  'settings.shopName': { en: 'Shop Name', km: 'ឈ្មោះហាង' },
+  'settings.shopCode': { en: 'Shop Code', km: 'លេខកូដហាង' },
+  'settings.logo': { en: 'Logo', km: 'រូបសញ្ញា' },
+  'settings.brandColor': { en: 'Brand Color', km: 'ពណ៌សម្គាល់' },
+  'settings.exchangeRate': { en: 'Exchange Rate (1 USD = KHR)', km: 'អត្រាប្តូរប្រាក់ (1 ដុល្លារ = រៀល)' },
+  'settings.sugarLevels': { en: 'Sugar Levels', km: 'កម្រិតស្ករ' },
+  'settings.loyalty': { en: 'Loyalty Program', km: 'កម្មវិធីភាពស្មោះត្រង់' },
+  'settings.loyaltyEnabled': { en: 'Enable Loyalty', km: 'បើកភាពស្មោះត្រង់' },
+  'settings.loyaltyTarget': { en: 'Orders to earn reward', km: 'ការបញ្ជាទិញដើម្បីទទួលរង្វាន់' },
+  'settings.loyaltyDiscount': { en: 'Reward Discount', km: 'បញ្ចុះតម្លៃរង្វាន់' },
+  'settings.save': { en: 'Save Changes', km: 'រក្សាទុកការផ្លាស់ប្តូរ' },
+  'settings.saving': { en: 'Saving...', km: 'កំពុងរក្សាទុក...' },
+
+  // === Chat ===
+  'chat.title': { en: 'Chat with Admin', km: 'ជជែកជាមួយអ្នកគ្រប់គ្រង' },
+  'chat.send': { en: 'Send', km: 'ផ្ញើ' },
+  'chat.typeMessage': { en: 'Type a message...', km: 'វាយសារ...' },
+
+  // === Dashboard ===
+  'dashboard.title': { en: 'Dashboard', km: 'ផ្ទាំងគ្រប់គ្រង' },
+  'dashboard.todaySales': { en: "Today's Sales", km: 'ការលក់ថ្ងៃនេះ' },
+  'dashboard.todayOrders': { en: "Today's Orders", km: 'ការបញ្ជាទិញថ្ងៃនេះ' },
+  'dashboard.todayRevenue': { en: "Today's Revenue", km: 'ចំណូលថ្ងៃនេះ' },
+  'dashboard.recentOrders': { en: 'Recent Orders', km: 'ការបញ្ជាទិញថ្មីៗ' },
+  'dashboard.topProducts': { en: 'Top Products', km: 'ផលិតផលកំពូល' },
+  'dashboard.welcome': { en: 'Welcome', km: 'សូមស្វាគមន៍' },
+
+  // === Common ===
+  'common.save': { en: 'Save', km: 'រក្សាទុក' },
+  'common.cancel': { en: 'Cancel', km: 'បោះបង់' },
+  'common.delete': { en: 'Delete', km: 'លុប' },
+  'common.edit': { en: 'Edit', km: 'កែសម្រួល' },
+  'common.add': { en: 'Add', km: 'បន្ថែម' },
+  'common.search': { en: 'Search...', km: 'ស្វែងរក...' },
+  'common.loading': { en: 'Loading...', km: 'កំពុងផ្ទុក...' },
+  'common.noData': { en: 'No data', km: 'គ្មានទិន្នន័យ' },
+  'common.confirm': { en: 'Confirm', km: 'បញ្ជាក់' },
+  'common.yes': { en: 'Yes', km: 'បាទ/ចាស' },
+  'common.no': { en: 'No', km: 'ទេ' },
+  'common.close': { en: 'Close', km: 'បិទ' },
+  'common.back': { en: 'Back', km: 'ថយក្រោយ' },
+  'common.next': { en: 'Next', km: 'បន្ទាប់' },
+  'common.actions': { en: 'Actions', km: 'សកម្មភាព' },
+  'common.status': { en: 'Status', km: 'ស្ថានភាព' },
+  'common.active': { en: 'Active', km: 'សកម្ម' },
+  'common.inactive': { en: 'Inactive', km: 'អសកម្ម' },
+  'common.pending': { en: 'Pending', km: 'កំពុងរង់ចាំ' },
+  'common.approved': { en: 'Approved', km: 'បានអនុម័ត' },
+  'common.rejected': { en: 'Rejected', km: 'បានបដិសេធ' },
+  'common.or': { en: 'or', km: 'ឬ' },
+  'common.poweredBy': { en: 'Powered by CaféOS', km: 'ដំណើរការដោយ CaféOS' },
+  'common.thankYou': { en: 'Thank you for your visit!', km: 'អរគុណសម្រាប់ការមកទស្សនា!' },
+
+  // === Auth (additional) ===
+  'auth.signInToAccount': { en: 'Sign in to your account', km: 'ចូលទៅគណនីរបស់អ្នក' },
+  'auth.rememberMe': { en: 'Remember me', km: 'ចងចាំខ្ញុំ' },
+  'auth.invalidCredentials': { en: 'Invalid email or password', km: 'អ៊ីមែល ឬ ពាក្យសម្ងាត់មិនត្រឹមត្រូវ' },
+  'auth.registerYourShop': { en: 'Register your shop', km: 'ចុះឈ្មោះហាងរបស់អ្នក' },
+  'auth.choosePlan': { en: 'Choose Plan', km: 'ជ្រើសរើសគម្រោង' },
+  'auth.yourDetails': { en: 'Your Details', km: 'ព័ត៌មានរបស់អ្នក' },
+  'auth.paymentStep': { en: 'Payment', km: 'ការបង់ប្រាក់' },
+  'auth.chooseYourPlan': { en: 'Choose your plan', km: 'ជ្រើសរើសគម្រោងរបស់អ្នក' },
+  'auth.allFeaturesIncluded': { en: 'All features included on every plan. Upgrade or downgrade anytime.', km: 'មុខងារទាំងអស់រួមបញ្ចូលក្នុងគម្រោងទាំងអស់។ ដំឡើង ឬបន្ថយបានគ្រប់ពេល។' },
+  'auth.monthly': { en: 'Monthly', km: 'ប្រចាំខែ' },
+  'auth.annual': { en: 'Annual', km: 'ប្រចាំឆ្នាំ' },
+  'auth.save': { en: 'Save', km: 'សន្សំ' },
+  'auth.mo': { en: '/mo', km: '/ខែ' },
+  'auth.yr': { en: '/yr', km: '/ឆ្នាំ' },
+  'auth.salesMo': { en: 'sales/mo', km: 'ការលក់/ខែ' },
+  'auth.unlimitedSales': { en: 'Unlimited sales', km: 'ការលក់គ្មានកំណត់' },
+  'auth.continueWith': { en: 'Continue with', km: 'បន្តជាមួយ' },
+  'auth.plan': { en: 'plan', km: 'គម្រោង' },
+  'auth.noPaymentRequired': { en: 'No payment required — start immediately.', km: 'មិនតម្រូវការបង់ប្រាក់ — ចាប់ផ្តើមភ្លាម។' },
+  'auth.completeRegistration': { en: 'Complete registration, then proceed to payment.', km: 'បំពេញការចុះឈ្មោះ រួចបន្តទៅការបង់ប្រាក់។' },
+  'auth.businessName': { en: 'Business name', km: 'ឈ្មោះអាជីវកម្ម' },
+  'auth.ownerNamePlaceholder': { en: 'John Doe', km: 'ឈ្មោះម្ចាស់' },
+  'auth.emailPlaceholder': { en: 'you@example.com', km: 'you@example.com' },
+  'auth.atLeast8Chars': { en: 'At least 8 characters', km: 'យ៉ាងហោចណាស់ ៨ តួអក្សរ' },
+  'auth.country': { en: 'Country', km: 'ប្រទេស' },
+  'auth.selectCountry': { en: 'Select country', km: 'ជ្រើសរើសប្រទេស' },
+  'auth.cambodia': { en: 'Cambodia', km: 'កម្ពុជា' },
+  'auth.thailand': { en: 'Thailand', km: 'ថៃ' },
+  'auth.vietnam': { en: 'Vietnam', km: 'វៀតណាម' },
+  'auth.malaysia': { en: 'Malaysia', km: 'ម៉ាឡេស៊ី' },
+  'auth.singapore': { en: 'Singapore', km: 'សិង្ហបុរី' },
+  'auth.indonesia': { en: 'Indonesia', km: 'ឥណ្ឌូនេស៊ី' },
+  'auth.philippines': { en: 'Philippines', km: 'ហ្វីលីពីន' },
+  'auth.unitedStates': { en: 'United States', km: 'សហរដ្ឋអាមេរិក' },
+  'auth.other': { en: 'Other', km: 'ផ្សេងទៀត' },
+  'auth.creatingAccount': { en: 'Creating account...', km: 'កំពុងបង្កើតគណនី...' },
+  'auth.createAccountPay': { en: 'Create account & proceed to payment', km: 'បង្កើតគណនី និងបន្តបង់ប្រាក់' },
+  'auth.createAccount': { en: 'Create account', km: 'បង្កើតគណនី' },
+  'auth.completePayment': { en: 'Complete Payment', km: 'បញ្ចប់ការបង់ប្រាក់' },
+  'auth.scanKHQR': { en: 'Scan the KHQR code to pay for your', km: 'ស្កេនកូដ KHQR ដើម្បីបង់ប្រាក់សម្រាប់' },
+  'auth.billing': { en: 'billing', km: 'វិក្កយបត្រ' },
+  'auth.khqrPaymentCode': { en: 'KHQR Payment Code', km: 'កូដបង់ប្រាក់ KHQR' },
+  'auth.khqrNotAvailable': { en: 'KHQR not available', km: 'KHQR មិនមាន' },
+  'auth.contactSupport': { en: 'Contact support', km: 'ទាក់ទងផ្នែកជំនួយ' },
+  'auth.awaitingVerification': { en: 'Awaiting verification', km: 'កំពុងរង់ចាំការផ្ទៀងផ្ទាត់' },
+  'auth.afterPaymentNote': { en: 'After payment, the platform owner will verify and approve your upgrade. You can start using CaféOS on the Free plan right away.', km: 'បន្ទាប់ពីបង់ប្រាក់ ម្ចាស់វេទិកានឹងផ្ទៀងផ្ទាត់ និងអនុម័តការដំឡើងរបស់អ្នក។ អ្នកអាចចាប់ផ្តើមប្រើ CaféOS លើគម្រោងឥតគិតថ្លៃភ្លាមៗ។' },
+  'auth.completedPayment': { en: "I've completed payment", km: 'ខ្ញុំបានបង់ប្រាក់រួចរាល់' },
+  'auth.skipFree': { en: 'Skip for now — start with Free plan', km: 'រំលងសម្រាប់ពេលនេះ — ចាប់ផ្តើមជាមួយគម្រោងឥតគិតថ្លៃ' },
+  'auth.changePlan': { en: 'Change plan', km: 'ផ្លាស់ប្តូរគម្រោង' },
+  'auth.signIn': { en: 'Sign in', km: 'ចូល' },
+  'auth.resetPassword': { en: 'Reset your password', km: 'កំណត់ពាក្យសម្ងាត់ឡើងវិញ' },
+  'auth.resetDesc': { en: "Enter your email and we'll send you a reset link.", km: 'បញ្ចូលអ៊ីមែលរបស់អ្នក ហើយយើងនឹងផ្ញើតំណកំណត់ឡើងវិញ។' },
+  'auth.sending': { en: 'Sending...', km: 'កំពុងផ្ញើ...' },
+  'auth.sendResetLink': { en: 'Send reset link', km: 'ផ្ញើតំណកំណត់ឡើងវិញ' },
+  'auth.checkEmail': { en: 'Check your email', km: 'ពិនិត្យអ៊ីមែលរបស់អ្នក' },
+  'auth.resetSent': { en: "If an account exists, we've sent a password reset link. The link expires in 1 hour.", km: 'ប្រសិនបើមានគណនី យើងបានផ្ញើតំណកំណត់ពាក្យសម្ងាត់ឡើងវិញ។ តំណផុតកំណត់ក្នុង ១ ម៉ោង។' },
+  'auth.backToSignIn': { en: 'Back to sign in', km: 'ត្រឡប់ទៅការចូល' },
+  'auth.posFeature': { en: 'Smart POS', km: 'POS ឆ្លាតវៃ' },
+  'auth.posDesc': { en: 'USD & KHR dual currency', km: 'រូបិយប័ណ្ណពីរ ដុល្លារ និងរៀល' },
+  'auth.coffeeFeature': { en: 'Coffee Ready', km: 'កាហ្វេរួចរាល់' },
+  'auth.coffeeDesc': { en: 'Sizes, sugar & customization', km: 'ទំហំ ស្ករ និងការប្ដូរតាមបំណង' },
+  'auth.loyaltyFeature': { en: 'Loyalty', km: 'ភាពស្មោះត្រង់' },
+  'auth.loyaltyDesc': { en: 'Auto rewards & discounts', km: 'រង្វាន់ និងបញ្ចុះតម្លៃស្វ័យប្រវត្តិ' },
+  'auth.reportsFeature': { en: 'Reports', km: 'របាយការណ៍' },
+  'auth.reportsDesc': { en: 'Sales, payments & products', km: 'ការលក់ ការបង់ប្រាក់ និងផលិតផល' },
+  'auth.customersFeature': { en: 'Customers', km: 'អតិថិជន' },
+  'auth.customersDesc': { en: 'Purchase history & CRM', km: 'ប្រវត្តិការទិញ និង CRM' },
+  'auth.invoiceFeature': { en: 'Invoice', km: 'វិក្កយបត្រ' },
+  'auth.invoiceDesc': { en: 'Print receipts instantly', km: 'បោះពុម្ពបង្កាន់ដៃភ្លាមៗ' },
+
+  // === Dashboard (additional) ===
+  'dashboard.welcomeBack': { en: 'Welcome back to', km: 'សូមស្វាគមន៍ការត្រឡប់មកកាន់' },
+  'dashboard.products': { en: 'Products', km: 'ផលិតផល' },
+  'dashboard.monthlyQuota': { en: 'Monthly Quota', km: 'កូតាប្រចាំខែ' },
+  'dashboard.gettingStarted': { en: 'Getting Started', km: 'ចាប់ផ្តើម' },
+  'dashboard.addFirstProduct': { en: 'Add your first product', km: 'បន្ថែមផលិតផលដំបូងរបស់អ្នក' },
+  'dashboard.makeTestSale': { en: 'Make a test sale', km: 'ធ្វើការលក់សាកល្បង' },
+  'dashboard.inviteStaff': { en: 'Invite a staff member', km: 'អញ្ជើញបុគ្គលិក' },
+  'dashboard.lowStockAlerts': { en: 'Low Stock Alerts', km: 'ការជូនដំណឹងសន្និធិទាប' },
+  'dashboard.viewAll': { en: 'View all', km: 'មើលទាំងអស់' },
+  'dashboard.low': { en: 'Low', km: 'ទាប' },
+
+  // === Products (additional) ===
+  'products.count': { en: 'products', km: 'ផលិតផល' },
+  'products.product': { en: 'Product', km: 'ផលិតផល' },
+  'products.basePrice': { en: 'Base Price ($)', km: 'តម្លៃគោល ($)' },
+  'products.sku': { en: 'SKU (optional)', km: 'SKU (ជម្រើស)' },
+  'products.noCategory': { en: 'No category', km: 'គ្មានប្រភេទ' },
+  'products.sugarDesc': { en: 'Customer can choose sugar level (set in Settings)', km: 'អតិថិជនអាចជ្រើសរើសកម្រិតស្ករ (កំណត់នៅក្នុងការកំណត់)' },
+  'products.sizeDesc': { en: 'Define sizes with prices. Leave price empty if not available.', km: 'កំណត់ទំហំជាមួយតម្លៃ។ ទុកតម្លៃទទេប្រសិនបើមិនមាន។' },
+  'products.sizeName': { en: 'Size Name', km: 'ឈ្មោះទំហំ' },
+  'products.priceDollar': { en: 'Price ($)', km: 'តម្លៃ ($)' },
+  'products.notAvailable': { en: 'Not available', km: 'មិនមាន' },
+  'products.addSize': { en: '+ Add size', km: '+ បន្ថែមទំហំ' },
+  'products.productDiscount': { en: 'Product Discount', km: 'បញ្ចុះតម្លៃផលិតផល' },
+  'products.discountDesc': { en: 'Apply a special discount to this product', km: 'អនុវត្តការបញ្ចុះតម្លៃពិសេសលើផលិតផលនេះ' },
+  'products.percentage': { en: 'Percentage (%)', km: 'ភាគរយ (%)' },
+  'products.fixed': { en: 'Fixed ($)', km: 'ថេរ ($)' },
+  'products.updateProduct': { en: 'Update Product', km: 'ធ្វើបច្ចុប្បន្នភាពផលិតផល' },
+  'products.saveProduct': { en: 'Save Product', km: 'រក្សាទុកផលិតផល' },
+  'products.outOfStock': { en: 'Out of stock', km: 'អស់សន្និធិ' },
+  'products.deleteProduct': { en: 'Delete Product', km: 'លុបផលិតផល' },
+  'products.deleteConfirmMsg': { en: 'This product will be removed from the POS and product list.', km: 'ផលិតផលនេះនឹងត្រូវបានដកចេញពីការលក់ និងបញ្ជីផលិតផល។' },
+  'products.categoryName': { en: 'Name', km: 'ឈ្មោះ' },
+  'products.categoryColor': { en: 'Color', km: 'ពណ៌' },
+  'products.saveCategory': { en: 'Save Category', km: 'រក្សាទុកប្រភេទ' },
+
+  // === Stock (additional) ===
+  'stock.itemsTracked': { en: 'items tracked', km: 'សម្ភារៈដែលតាមដាន' },
+  'stock.addItem': { en: 'Add Item', km: 'បន្ថែមសម្ភារៈ' },
+  'stock.belowThreshold': { en: 'below reorder threshold', km: 'ក្រោមកម្រិតបញ្ជាទិញឡើងវិញ' },
+  'stock.item': { en: 'Item', km: 'សម្ភារៈ' },
+  'stock.reorderAt': { en: 'Reorder At', km: 'បញ្ជាទិញនៅ' },
+  'stock.costPerUnit': { en: 'Cost/Unit', km: 'តម្លៃ/ឯកតា' },
+  'stock.actions': { en: 'Actions', km: 'សកម្មភាព' },
+  'stock.pieces': { en: 'Pieces', km: 'ដុំ' },
+  'stock.grams': { en: 'Grams', km: 'ក្រាម' },
+  'stock.kilograms': { en: 'Kilograms', km: 'គីឡូក្រាម' },
+  'stock.milliliters': { en: 'Milliliters', km: 'មីលីលីត្រ' },
+  'stock.liters': { en: 'Liters', km: 'លីត្រ' },
+  'stock.initialQty': { en: 'Initial Quantity', km: 'ចំនួនដំបូង' },
+  'stock.reorderThreshold': { en: 'Reorder Threshold', km: 'កម្រិតបញ្ជាទិញឡើងវិញ' },
+  'stock.adjust': { en: 'Adjust', km: 'កែតម្រូវ' },
+  'stock.receiveStock': { en: 'Receive Stock', km: 'ទទួលសន្និធិ' },
+  'stock.wastage': { en: 'Wastage', km: 'សំណល់' },
+  'stock.correction': { en: 'Correction', km: 'កែតម្រូវ' },
+  'stock.supplier': { en: 'Supplier', km: 'អ្នកផ្គត់ផ្គង់' },
+  'stock.purchasePrice': { en: 'Purchase Price', km: 'តម្លៃទិញ' },
+  'stock.reasonNotes': { en: 'Reason / Notes', km: 'មូលហេតុ / កំណត់ត្រា' },
+  'stock.saveAdjustment': { en: 'Save Adjustment', km: 'រក្សាទុកការកែតម្រូវ' },
+  'stock.ok': { en: 'OK', km: 'យល់ព្រម' },
+
+  // === Income (additional) ===
+  'income.addEntry': { en: 'Add Entry', km: 'បន្ថែមកំណត់ត្រា' },
+  'income.totalIncomeSummary': { en: 'Total Income', km: 'ចំណូលសរុប' },
+  'income.totalExpenseSummary': { en: 'Total Expenses', km: 'ចំណាយសរុប' },
+  'income.netProfitLoss': { en: 'Net Profit/Loss', km: 'ចំណេញ/ខាតសុទ្ធ' },
+  'income.allTime': { en: 'All Time', km: 'គ្រប់ពេល' },
+  'income.category': { en: 'Category', km: 'ប្រភេទ' },
+  'income.note': { en: 'Note', km: 'កំណត់ត្រា' },
+  'income.ingredients': { en: 'Ingredients', km: 'គ្រឿងផ្សំ' },
+  'income.rent': { en: 'Rent', km: 'ថ្លៃជួល' },
+  'income.utilities': { en: 'Utilities', km: 'សេវាកម្មសាធារណៈ' },
+  'income.salaries': { en: 'Salaries', km: 'ប្រាក់ខែ' },
+  'income.otherCategory': { en: 'Other', km: 'ផ្សេងទៀត' },
+  'income.vendor': { en: 'Vendor', km: 'អ្នកលក់' },
+  'income.allPay': { en: 'All Pay', km: 'ការបង់ប្រាក់ទាំងអស់' },
+  'income.mixed': { en: 'Mixed', km: 'ចម្រុះ' },
+  'income.notSpecified': { en: 'Not specified', km: 'មិនបានបញ្ជាក់' },
+  'income.noPermission': { en: 'You do not have permission to access this feature.', km: 'អ្នកមិនមានសិទ្ធិចូលប្រើមុខងារនេះទេ។' },
+  'income.upgradePlan': { en: 'Upgrade Plan', km: 'ដំឡើងគម្រោង' },
+
+  // === Customers (additional) ===
+  'customers.registered': { en: 'registered customers', km: 'អតិថិជនបានចុះឈ្មោះ' },
+  'customers.totalCustomers': { en: 'Total Customers', km: 'អតិថិជនសរុប' },
+  'customers.customerRevenue': { en: 'Customer Revenue', km: 'ចំណូលពីអតិថិជន' },
+  'customers.avgVisits': { en: 'Avg Visits', km: 'ការមកមធ្យម' },
+  'customers.searchPlaceholder': { en: 'Search by phone or name...', km: 'ស្វែងរកតាមទូរស័ព្ទ ឬ ឈ្មោះ...' },
+  'customers.noCustomersFound': { en: 'No customers found', km: 'រកមិនឃើញអតិថិជន' },
+  'customers.noCustomersYet': { en: 'No customers yet. Add one or they will appear after POS orders.', km: 'មិនមានអតិថិជននៅឡើយ។ បន្ថែមមួយ ឬពួកគេនឹងបង្ហាញបន្ទាប់ពីការបញ្ជាទិញតាម POS។' },
+  'customers.deleteCustomer': { en: 'Delete Customer', km: 'លុបអតិថិជន' },
+  'customers.deleteMsg': { en: 'Their purchase history will be unlinked but orders will remain.', km: 'ប្រវត្តិការទិញរបស់ពួកគេនឹងត្រូវផ្ដាច់ តែការបញ្ជាទិញនឹងនៅដដែល។' },
+  'customers.phoneRequired': { en: 'Phone (required)', km: 'ទូរស័ព្ទ (ចាំបាច់)' },
+  'customers.nameOptional': { en: 'Name (optional)', km: 'ឈ្មោះ (ជម្រើស)' },
+  'customers.noteOptional': { en: 'Note (optional)', km: 'កំណត់ត្រា (ជម្រើស)' },
+  'customers.updateCustomer': { en: 'Update Customer', km: 'ធ្វើបច្ចុប្បន្នភាពអតិថិជន' },
+  'customers.addCustomer': { en: 'Add Customer', km: 'បន្ថែមអតិថិជន' },
+  'customers.customerDetails': { en: 'Customer Details', km: 'ព័ត៌មានអតិថិជន' },
+  'customers.spent': { en: 'Spent', km: 'ចំណាយ' },
+  'customers.avgPerVisit': { en: 'Avg/Visit', km: 'មធ្យម/ដង' },
+  'customers.moreForNext': { en: 'more visits until reward!', km: 'ដងទៀតដើម្បីទទួលរង្វាន់!' },
+  'customers.earnedRewards': { en: 'Earned reward(s)!', km: 'ទទួលបានរង្វាន់!' },
+  'customers.moreForNextReward': { en: 'more for next.', km: 'ទៀតសម្រាប់បន្ទាប់។' },
+  'customers.loyaltyNotActive': { en: 'Loyalty program is not active. Enable it in Settings.', km: 'កម្មវិធីភាពស្មោះត្រង់មិនសកម្មទេ។ បើកវានៅក្នុងការកំណត់។' },
+  'customers.purchaseHistory': { en: 'Purchase History', km: 'ប្រវត្តិការទិញ' },
+  'customers.noOrdersYet': { en: 'No orders yet', km: 'មិនមានការបញ្ជាទិញនៅឡើយ' },
+  'customers.order': { en: 'Order', km: 'ការបញ្ជាទិញ' },
+  'customers.customerSince': { en: 'Customer since', km: 'អតិថិជនតាំងពី' },
+
+  // === Reports (additional) ===
+  'reports.summary': { en: 'summary', km: 'សេចក្តីសង្ខេប' },
+  'reports.today': { en: 'Today', km: 'ថ្ងៃនេះ' },
+  'reports.totalTransactions': { en: 'Total Transactions', km: 'ប្រតិបត្តិការសរុប' },
+  'reports.totalRevenue': { en: 'Total Revenue', km: 'ចំណូលសរុប' },
+  'reports.avgOrderValue': { en: 'Avg Order Value', km: 'តម្លៃបញ្ជាទិញមធ្យម' },
+  'reports.top5Products': { en: 'Top 5 Products', km: 'ផលិតផលកំពូល ៥' },
+  'reports.noSales': { en: 'No sales in this period', km: 'គ្មានការលក់ក្នុងរយៈពេលនេះ' },
+  'reports.sold': { en: 'sold', km: 'បានលក់' },
+  'reports.paymentMethods': { en: 'Payment Methods', km: 'វិធីបង់ប្រាក់' },
+  'reports.order': { en: 'order', km: 'ការបញ្ជាទិញ' },
+  'reports.loyaltyReward': { en: 'Loyalty Reward', km: 'រង្វាន់ភាពស្មោះត្រង់' },
+  'reports.manualDiscount': { en: 'Manual Discount', km: 'បញ្ចុះតម្លៃដោយដៃ' },
+
+  // === Users (additional) ===
+  'users.staffManagement': { en: 'Staff Management', km: 'គ្រប់គ្រងបុគ្គលិក' },
+  'users.teamMembers': { en: 'team members', km: 'សមាជិកក្រុម' },
+  'users.addStaff': { en: 'Add Staff', km: 'បន្ថែមបុគ្គលិក' },
+  'users.shopCode': { en: 'Shop Code', km: 'លេខកូដហាង' },
+  'users.staffLoginFormat': { en: 'Staff login format', km: 'ទម្រង់ចូលបុគ្គលិក' },
+  'users.name': { en: 'Name', km: 'ឈ្មោះ' },
+  'users.lastLogin': { en: 'Last Login', km: 'ចូលចុងក្រោយ' },
+  'users.never': { en: 'Never', km: 'មិនដែល' },
+  'users.active': { en: 'Active', km: 'សកម្ម' },
+  'users.inactive': { en: 'Inactive', km: 'អសកម្ម' },
+  'users.deactivate': { en: 'Deactivate', km: 'បិទសកម្មភាព' },
+  'users.activate': { en: 'Activate', km: 'បើកសកម្មភាព' },
+  'users.addStaffMember': { en: 'Add Staff Member', km: 'បន្ថែមសមាជិកបុគ្គលិក' },
+  'users.usernamePlaceholder': { en: 'e.g. john, cashier1', km: 'ឧ. john, cashier1' },
+  'users.displayName': { en: 'Display Name (optional)', km: 'ឈ្មោះបង្ហាញ (ជម្រើស)' },
+  'users.min6Chars': { en: 'Min 6 characters', km: 'យ៉ាងហោចណាស់ ៦ តួអក្សរ' },
+  'users.cashier': { en: 'Cashier', km: 'អ្នកគិតប្រាក់' },
+  'users.loginCredentials': { en: 'Login credentials for this staff:', km: 'ព័ត៌មានចូលសម្រាប់បុគ្គលិកនេះ:' },
+  'users.creating': { en: 'Creating...', km: 'កំពុងបង្កើត...' },
+  'users.createStaffAccount': { en: 'Create Staff Account', km: 'បង្កើតគណនីបុគ្គលិក' },
+  'users.resetPasswordTitle': { en: 'Reset Password', km: 'កំណត់ពាក្យសម្ងាត់ឡើងវិញ' },
+  'users.newPassword': { en: 'New Password', km: 'ពាក្យសម្ងាត់ថ្មី' },
+  'users.passwordResetSuccess': { en: 'Password reset successfully!', km: 'កំណត់ពាក្យសម្ងាត់ឡើងវិញដោយជោគជ័យ!' },
+  'users.resetting': { en: 'Resetting...', km: 'កំពុងកំណត់ឡើងវិញ...' },
+
+  // === Billing (additional) ===
+  'billing.manage': { en: 'Manage your subscription and usage', km: 'គ្រប់គ្រងការជាវ និងការប្រើប្រាស់របស់អ្នក' },
+  'billing.pendingApproval': { en: 'Upgrade pending approval', km: 'ការដំឡើងកំពុងរង់ចាំការអនុម័ត' },
+  'billing.requestReview': { en: 'is being reviewed by the platform owner.', km: 'កំពុងត្រូវពិនិត្យដោយម្ចាស់វេទិកា។' },
+  'billing.monthlyUsage': { en: 'Monthly sales usage', km: 'ការប្រើប្រាស់ការលក់ប្រចាំខែ' },
+  'billing.changePlan': { en: 'Change Plan', km: 'ផ្លាស់ប្តូរគម្រោង' },
+  'billing.paymentViaKHQR': { en: 'Payment via KHQR', km: 'ការបង់ប្រាក់តាម KHQR' },
+  'billing.scanKHQRDesc': { en: 'Scan this KHQR code to make payment for your plan upgrade or renewal.', km: 'ស្កេនកូដ KHQR នេះដើម្បីបង់ប្រាក់សម្រាប់ការដំឡើង ឬបន្តគម្រោង។' },
+  'billing.step1': { en: '1. Scan the QR code with your banking app', km: '១. ស្កេនកូដ QR ជាមួយកម្មវិធីធនាគាររបស់អ្នក' },
+  'billing.step2': { en: '2. Transfer the plan amount', km: '២. ផ្ទេរចំនួនទឹកប្រាក់គម្រោង' },
+  'billing.step3': { en: '3. Click Upgrade or Renew above', km: '៣. ចុចដំឡើង ឬបន្តខាងលើ' },
+  'billing.step4': { en: '4. Platform owner will verify and approve', km: '៤. ម្ចាស់វេទិកានឹងផ្ទៀងផ្ទាត់ និងអនុម័ត' },
+  'billing.availablePlans': { en: 'Available Plans', km: 'គម្រោងដែលមាន' },
+  'billing.annualSaveMore': { en: 'Annual (save more)', km: 'ប្រចាំឆ្នាំ (សន្សំបន្ថែម)' },
+  'billing.upgradeTo': { en: 'Upgrade to', km: 'ដំឡើងទៅ' },
+  'billing.afterPaymentNote': { en: 'After payment, the platform owner will verify and approve. Your current plan stays active during review.', km: 'បន្ទាប់ពីបង់ប្រាក់ ម្ចាស់វេទិកានឹងផ្ទៀងផ្ទាត់ និងអនុម័ត។ គម្រោងបច្ចុប្បន្នរបស់អ្នកនៅសកម្មកំឡុងពេលពិនិត្យ។' },
+  'billing.completedPayment': { en: "I've completed payment", km: 'ខ្ញុំបានបង់ប្រាក់រួចរាល់' },
+  'billing.requestSubmitted': { en: 'Request submitted! The platform owner will review shortly.', km: 'សំណើបានដាក់ស្នើ! ម្ចាស់វេទិកានឹងពិនិត្យក្នុងពេលឆាប់ៗ។' },
+
+  // === Settings (additional) ===
+  'settings.manageShop': { en: 'Manage your shop profile and branding', km: 'គ្រប់គ្រងប្រវត្តិរូប និងម៉ាកហាងរបស់អ្នក' },
+  'settings.shopProfile': { en: 'Shop Profile', km: 'ប្រវត្តិរូបហាង' },
+  'settings.shopLogo': { en: 'Shop Logo', km: 'រូបសញ្ញាហាង' },
+  'settings.uploadLogo': { en: 'Upload Logo', km: 'ផ្ទុករូបសញ្ញា' },
+  'settings.logoHint': { en: 'PNG, JPG up to 2MB', km: 'PNG, JPG រហូតដល់ 2MB' },
+  'settings.shopCodeHint': { en: 'Changing this will auto-update all staff login credentials', km: 'ការផ្លាស់ប្តូរនេះនឹងធ្វើបច្ចុប្បន្នភាពព័ត៌មានចូលបុគ្គលិកទាំងអស់ដោយស្វ័យប្រវត្តិ' },
+  'settings.shopColorDesc': { en: 'Used for your shop branding and accents', km: 'ប្រើសម្រាប់ម៉ាក និងការរចនាហាងរបស់អ្នក' },
+  'settings.address': { en: 'Address', km: 'អាសយដ្ឋាន' },
+  'settings.exchangeRateDesc': { en: 'Used to show prices in both USD and KHR', km: 'ប្រើដើម្បីបង្ហាញតម្លៃជា ដុល្លារ និង រៀល' },
+  'settings.timezone': { en: 'Timezone', km: 'តំបន់ពេលវេលា' },
+  'settings.sugarLevelsDesc': { en: 'Define the sugar options available for your drinks', km: 'កំណត់ជម្រើសស្ករដែលមានសម្រាប់ភេសជ្ជៈរបស់អ្នក' },
+  'settings.loyaltyDesc': { en: 'Reward returning customers with a discount after reaching visit target', km: 'ផ្តល់រង្វាន់ដល់អតិថិជនដែលត្រឡប់មកវិញជាមួយការបញ្ចុះតម្លៃបន្ទាប់ពីឈានដល់គោលដៅការមក' },
+  'settings.visitsNeeded': { en: 'Visits needed for reward', km: 'ចំនួនដងដែលត្រូវការសម្រាប់រង្វាន់' },
+  'settings.visitsDesc': { en: 'Customer gets a discount after this many orders', km: 'អតិថិជនទទួលបានការបញ្ចុះតម្លៃបន្ទាប់ពីការបញ្ជាទិញចំនួននេះ' },
+  'settings.discountType': { en: 'Discount type', km: 'ប្រភេទបញ្ចុះតម្លៃ' },
+  'settings.discountValue': { en: 'Discount value', km: 'តម្លៃបញ្ចុះតម្លៃ' },
+  'settings.savedSuccess': { en: 'Saved successfully!', km: 'រក្សាទុកដោយជោគជ័យ!' },
+  'settings.fixedAmount': { en: 'Fixed Amount ($)', km: 'ចំនួនថេរ ($)' },
+
+  // === Chat (additional) ===
+  'chat.contactSupport': { en: 'Contact the platform owner for upgrade requests or support', km: 'ទាក់ទងម្ចាស់វេទិកាសម្រាប់សំណើដំឡើង ឬជំនួយ' },
+  'chat.startConversation': { en: 'Start a conversation with the platform owner', km: 'ចាប់ផ្តើមការសន្ទនាជាមួយម្ចាស់វេទិកា' },
+
+  // === Kitchen ===
+  'kitchen.title': { en: 'Kitchen Display', km: 'ផ្ទាំងផ្ទះបាយ' },
+  'kitchen.active': { en: 'active', km: 'សកម្ម' },
+  'kitchen.noOrders': { en: 'No active orders', km: 'គ្មានការបញ្ជាទិញសកម្ម' },
+  'kitchen.markReady': { en: 'Mark Ready', km: 'សម្គាល់រួចរាល់' },
+
+  // === Admin Dashboard ===
+  'adminDash.title': { en: 'Admin Dashboard', km: 'ផ្ទាំងគ្រប់គ្រងអ្នកគ្រប់គ្រង' },
+  'adminDash.unreadChats': { en: 'unread chats', km: 'សារមិនទាន់អាន' },
+  'adminDash.totalShops': { en: 'Total Shops', km: 'ហាងសរុប' },
+  'adminDash.active': { en: 'active', km: 'សកម្ម' },
+  'adminDash.totalSales': { en: 'Total Sales', km: 'ការលក់សរុប' },
+  'adminDash.totalRevenue': { en: 'Total Revenue', km: 'ចំណូលសរុប' },
+  'adminDash.packages': { en: 'Packages', km: 'កញ្ចប់' },
+  'adminDash.planDistribution': { en: 'Plan Distribution', km: 'ការចែកចាយគម្រោង' },
+
+  // === Admin Packages ===
+  'adminPkg.title': { en: 'Packages', km: 'កញ្ចប់' },
+  'adminPkg.newPackage': { en: 'New Package', km: 'កញ្ចប់ថ្មី' },
+  'adminPkg.default': { en: 'Default', km: 'លំនាំដើម' },
+  'adminPkg.hidden': { en: 'Hidden', km: 'លាក់' },
+  'adminPkg.saleLimit': { en: 'Sale Limit', km: 'កំណត់ការលក់' },
+  'adminPkg.activeShops': { en: 'Active Shops', km: 'ហាងសកម្ម' },
+  'adminPkg.pricing': { en: 'Pricing', km: 'តម្លៃ' },
+  'adminPkg.editPackage': { en: 'Edit Package', km: 'កែសម្រួលកញ្ចប់' },
+  'adminPkg.description': { en: 'Description', km: 'ការពិពណ៌នា' },
+  'adminPkg.descHint': { en: 'Short description shown on registration page', km: 'ការពិពណ៌នាខ្លីបង្ហាញនៅទំព័រចុះឈ្មោះ' },
+  'adminPkg.saleLimitHint': { en: 'Sale Limit (blank = unlimited)', km: 'កំណត់ការលក់ (ទទេ = គ្មានកំណត់)' },
+  'adminPkg.monthlyPrice': { en: 'Monthly Price ($)', km: 'តម្លៃប្រចាំខែ ($)' },
+  'adminPkg.annualPrice': { en: 'Annual Price ($)', km: 'តម្លៃប្រចាំឆ្នាំ ($)' },
+  'adminPkg.annualDiscount': { en: 'Annual discount', km: 'បញ្ចុះតម្លៃប្រចាំឆ្នាំ' },
+  'adminPkg.modules': { en: 'Modules', km: 'មុខងារ' },
+  'adminPkg.defaultPlan': { en: 'Default plan (auto-assigned)', km: 'គម្រោងលំនាំដើម (កំណត់ស្វ័យប្រវត្តិ)' },
+  'adminPkg.visibleRegistration': { en: 'Visible on registration', km: 'បង្ហាញនៅលើការចុះឈ្មោះ' },
+  'adminPkg.updatePackage': { en: 'Update Package', km: 'ធ្វើបច្ចុប្បន្នភាពកញ្ចប់' },
+  'adminPkg.createPackage': { en: 'Create Package', km: 'បង្កើតកញ្ចប់' },
+
+  // === Admin Shops ===
+  'adminShops.title': { en: 'Shops', km: 'ហាង' },
+  'adminShops.registeredShops': { en: 'registered shops', km: 'ហាងបានចុះឈ្មោះ' },
+  'adminShops.pendingApprovals': { en: 'Pending Plan Approvals', km: 'ការអនុម័តគម្រោងដែលកំពុងរង់ចាំ' },
+  'adminShops.requesting': { en: 'Requesting', km: 'កំពុងស្នើសុំ' },
+  'adminShops.registered': { en: 'Registered', km: 'បានចុះឈ្មោះ' },
+  'adminShops.approve': { en: 'Approve', km: 'អនុម័ត' },
+  'adminShops.reject': { en: 'Reject', km: 'បដិសេធ' },
+  'adminShops.shop': { en: 'Shop', km: 'ហាង' },
+  'adminShops.owner': { en: 'Owner', km: 'ម្ចាស់' },
+  'adminShops.plan': { en: 'Plan', km: 'គម្រោង' },
+  'adminShops.sales': { en: 'Sales', km: 'ការលក់' },
+  'adminShops.users': { en: 'Users', km: 'អ្នកប្រើប្រាស់' },
+  'adminShops.created': { en: 'Created', km: 'បានបង្កើត' },
+  'adminShops.upgradePending': { en: 'Upgrade pending', km: 'ការដំឡើងកំពុងរង់ចាំ' },
+  'adminShops.resetPassword': { en: 'Reset password', km: 'កំណត់ពាក្យសម្ងាត់ឡើងវិញ' },
+  'adminShops.editQuota': { en: 'Edit quota', km: 'កែសម្រួលកូតា' },
+  'adminShops.suspend': { en: 'Suspend', km: 'ផ្អាក' },
+  'adminShops.reactivate': { en: 'Reactivate', km: 'បើកដំណើរការឡើងវិញ' },
+  'adminShops.editQuotaTitle': { en: 'Edit Quota', km: 'កែសម្រួលកូតា' },
+  'adminShops.quotaOverride': { en: 'Quota Override (blank to use plan default)', km: 'កូតាជំនួស (ទទេដើម្បីប្រើលំនាំដើមគម្រោង)' },
+  'adminShops.reason': { en: 'Reason', km: 'មូលហេតុ' },
+  'adminShops.saveOverride': { en: 'Save Override', km: 'រក្សាទុកការជំនួស' },
+  'adminShops.resetOwnerPassword': { en: 'Reset Owner Password', km: 'កំណត់ពាក្យសម្ងាត់ម្ចាស់ឡើងវិញ' },
+  'adminShops.email': { en: 'Email', km: 'អ៊ីមែល' },
+  'adminShops.min8Chars': { en: 'Min 8 characters', km: 'យ៉ាងហោចណាស់ ៨ តួអក្សរ' },
+  'adminShops.confirmApproval': { en: 'Confirm Approval', km: 'បញ្ជាក់ការអនុម័ត' },
+  'adminShops.confirmRejection': { en: 'Confirm Rejection', km: 'បញ្ជាក់ការបដិសេធ' },
+  'adminShops.approveMsg': { en: 'Are you sure you want to approve the upgrade?', km: 'តើអ្នកពិតជាចង់អនុម័តការដំឡើងមែនទេ?' },
+  'adminShops.rejectMsg': { en: 'Are you sure you want to reject the upgrade?', km: 'តើអ្នកពិតជាចង់បដិសេធការដំឡើងមែនទេ?' },
+  'adminShops.yesApprove': { en: 'Yes, Approve', km: 'បាទ/ចាស អនុម័ត' },
+  'adminShops.yesReject': { en: 'Yes, Reject', km: 'បាទ/ចាស បដិសេធ' },
+
+  // === Admin Reports ===
+  'adminReports.title': { en: 'Platform Reports', km: 'របាយការណ៍វេទិកា' },
+  'adminReports.exportCSV': { en: 'Export CSV', km: 'នាំចេញ CSV' },
+  'adminReports.activeShops': { en: 'Active Shops', km: 'ហាងសកម្ម' },
+  'adminReports.totalSales': { en: 'Total Sales', km: 'ការលក់សរុប' },
+  'adminReports.totalRevenue': { en: 'Total Revenue', km: 'ចំណូលសរុប' },
+  'adminReports.planDistribution': { en: 'Plan Distribution', km: 'ការចែកចាយគម្រោង' },
+  'adminReports.subscriptionRevenue': { en: 'Subscription Revenue', km: 'ចំណូលពីការជាវ' },
+  'adminReports.daily': { en: 'Daily', km: 'ប្រចាំថ្ងៃ' },
+  'adminReports.weekly': { en: 'Weekly', km: 'ប្រចាំសប្ដាហ៍' },
+  'adminReports.monthly': { en: 'Monthly', km: 'ប្រចាំខែ' },
+  'adminReports.yearly': { en: 'Yearly', km: 'ប្រចាំឆ្នាំ' },
+  'adminReports.package': { en: 'Package', km: 'កញ្ចប់' },
+  'adminReports.shops': { en: 'Shops', km: 'ហាង' },
+  'adminReports.billing': { en: 'Billing', km: 'វិក្កយបត្រ' },
+  'adminReports.monthlyBilling': { en: 'Monthly', km: 'ប្រចាំខែ' },
+  'adminReports.annualBilling': { en: 'Annual', km: 'ប្រចាំឆ្នាំ' },
+  'adminReports.estimatedRevenue': { en: 'Est. Revenue', km: 'ចំណូលប៉ាន់ស្មាន' },
+  'adminReports.perPeriod': { en: 'per period', km: 'ក្នុងមួយរយៈពេល' },
+  'adminReports.totalSubscriptionRevenue': { en: 'Total Subscription Revenue', km: 'ចំណូលពីការជាវសរុប' },
+  'adminReports.newShops': { en: 'New Shops', km: 'ហាងថ្មី' },
+  'adminReports.revenueFromShops': { en: 'Revenue from Shops', km: 'ចំណូលពីហាង' },
+  'adminReports.shopName': { en: 'Shop', km: 'ហាង' },
+  'adminReports.plan': { en: 'Plan', km: 'គម្រោង' },
+  'adminReports.cycle': { en: 'Cycle', km: 'វដ្ដ' },
+  'adminReports.price': { en: 'Price', km: 'តម្លៃ' },
+  'adminReports.registeredAt': { en: 'Registered', km: 'បានចុះឈ្មោះ' },
+  'adminReports.free': { en: 'Free', km: 'ឥតគិតថ្លៃ' },
+  'adminReports.noShops': { en: 'No shops in this period', km: 'គ្មានហាងក្នុងរយៈពេលនេះ' },
+
+  // === Admin Messages ===
+  'adminMsg.title': { en: 'Messages', km: 'សារ' },
+  'adminMsg.noConversations': { en: 'No conversations yet', km: 'មិនមានការសន្ទនានៅឡើយ' },
+  'adminMsg.selectConversation': { en: 'Select a conversation', km: 'ជ្រើសរើសការសន្ទនា' },
+
+  // === Admin Settings ===
+  'adminSettings.title': { en: 'Platform Settings', km: 'ការកំណត់វេទិកា' },
+  'adminSettings.manage': { en: 'Manage payment, contact, and platform configuration', km: 'គ្រប់គ្រងការបង់ប្រាក់ ទំនាក់ទំនង និងការកំណត់រចនាសម្ព័ន្ធវេទិកា' },
+  'adminSettings.khqrTitle': { en: 'KHQR Payment Code', km: 'កូដបង់ប្រាក់ KHQR' },
+  'adminSettings.khqrDesc': { en: 'This QR code is shown to new shops when they register for a paid plan.', km: 'កូដ QR នេះត្រូវបង្ហាញដល់ហាងថ្មីនៅពេលពួកគេចុះឈ្មោះសម្រាប់គម្រោងបង់ប្រាក់។' },
+  'adminSettings.uploadKHQR': { en: 'Upload KHQR', km: 'ផ្ទុក KHQR' },
+  'adminSettings.khqrHint': { en: 'PNG, JPG. Recommended: 400x400px or higher', km: 'PNG, JPG។ ណែនាំ: 400x400px ឬខ្ពស់ជាង' },
+  'adminSettings.contactSupport': { en: 'Contact & Support', km: 'ទំនាក់ទំនង និងជំនួយ' },
+  'adminSettings.telegramUsername': { en: 'Telegram Username', km: 'ឈ្មោះអ្នកប្រើ Telegram' },
+  'adminSettings.telegramGroupLink': { en: 'Telegram Group Link', km: 'តំណក្រុម Telegram' },
+  'adminSettings.saveSettings': { en: 'Save Settings', km: 'រក្សាទុកការកំណត់' },
+
+  // === Quota Widget ===
+  'quota.salesUnlimited': { en: 'Unlimited plan', km: 'គម្រោងគ្មានកំណត់' },
+  'quota.salesUsed': { en: 'sales used', km: 'ការលក់បានប្រើ' },
+  'quota.daysUntilReset': { en: 'days until reset', km: 'ថ្ងៃទៀតដើម្បីកំណត់ឡើងវិញ' },
+  'quota.sales': { en: 'sales', km: 'ការលក់' },
+
+  // === Shop Layout Client ===
+  'layout.quotaReached': { en: 'Sale quota reached', km: 'កូតាលក់បានឈានដល់' },
+  'layout.quotaReachedMsg': { en: 'plan has reached its monthly limit. Features like POS are temporarily locked until the quota resets or you upgrade your plan.', km: 'គម្រោងបានឈានដល់កំណត់ប្រចាំខែ។ មុខងារដូចជា POS ត្រូវបានចាក់សោរជាបណ្ដោះអាសន្ន រហូតដល់កូតាកំណត់ឡើងវិញ ឬអ្នកដំឡើងគម្រោង។' },
+  'layout.resets': { en: 'Resets', km: 'កំណត់ឡើងវិញ' },
+}
+
+export function I18nProvider({ children }: { children: ReactNode }) {
+  const [lang, setLangState] = useState<Lang>('en')
+
+  useEffect(() => {
+    const saved = localStorage.getItem('cafeos-lang') as Lang
+    if (saved === 'en' || saved === 'km') setLangState(saved)
+  }, [])
+
+  // Apply font-khmer class to html element when in Khmer mode
+  useEffect(() => {
+    const html = document.documentElement
+    if (lang === 'km') {
+      html.classList.add('font-khmer')
+      html.setAttribute('lang', 'km')
+    } else {
+      html.classList.remove('font-khmer')
+      html.setAttribute('lang', 'en')
+    }
+  }, [lang])
+
+  function setLang(l: Lang) {
+    setLangState(l)
+    localStorage.setItem('cafeos-lang', l)
+  }
+
+  function t(key: string): string {
+    const entry = translations[key]
+    if (!entry) return key
+    return entry[lang]
+  }
+
+  function bilingual(key: string): [string, string] {
+    const entry = translations[key]
+    if (!entry) return [key, '']
+    if (lang === 'en') return [entry.en, entry.km]
+    return [entry.km, entry.en]
+  }
+
+  return (
+    <I18nContext.Provider value={{ lang, setLang, t, bilingual }}>
+      {children}
+    </I18nContext.Provider>
+  )
+}
+
+// Helper component for bilingual text display
+export function BiText({ k, className, subClassName }: { k: string; className?: string; subClassName?: string }) {
+  const { bilingual, lang } = useI18n()
+  const [main, sub] = bilingual(k)
+  return (
+    <span className={className}>
+      <span className={lang === 'km' ? 'font-khmer' : ''}>{main}</span>
+      {sub && <span className={`block text-[10px] opacity-60 ${lang === 'km' ? '' : 'font-khmer'} ${subClassName || ''}`}>{sub}</span>}
+    </span>
+  )
+}

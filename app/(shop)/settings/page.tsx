@@ -6,8 +6,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Upload, Image as ImageIcon, Plus, X } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 
 export default function SettingsPage() {
+  const { t, bilingual, lang } = useI18n()
   const router = useRouter()
   const [form, setForm] = useState({
     shopCode: '',
@@ -108,22 +111,26 @@ export default function SettingsPage() {
     }
   }
 
+  const [titleMain, titleSub] = bilingual('settings.title')
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-sm text-gray-500">Manage your shop profile and branding</p>
+        <h1 className={cn('text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>{titleMain}
+          <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{titleSub}</span>
+        </h1>
+        <p className="text-sm text-gray-500">{t('settings.manageShop')}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Shop Profile</CardTitle>
+          <CardTitle>{t('settings.shopProfile')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSave} className="space-y-5">
             {/* Logo Upload */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Shop Logo</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings.shopLogo')}</label>
               <div className="flex items-center gap-4">
                 <div className="h-20 w-20 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
                   {logoPreview ? (
@@ -146,15 +153,15 @@ export default function SettingsPage() {
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    <Upload className="h-4 w-4 mr-1" /> Upload Logo
+                    <Upload className="h-4 w-4 mr-1" /> {t('settings.uploadLogo')}
                   </Button>
-                  <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 2MB</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('settings.logoHint')}</p>
                 </div>
               </div>
             </div>
 
             <Input
-              label="Shop Name"
+              label={t('settings.shopName')}
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
@@ -162,7 +169,7 @@ export default function SettingsPage() {
 
             {/* Shop Code */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Shop Code</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.shopCode')}</label>
               <div className="flex items-center gap-3">
                 <Input
                   value={form.shopCode}
@@ -172,12 +179,12 @@ export default function SettingsPage() {
                 />
                 <p className="text-xs text-gray-400">Staff login: <span className="font-mono">username.<strong>{form.shopCode || '...'}</strong></span></p>
               </div>
-              <p className="text-xs text-gray-400 mt-1">Changing this will auto-update all staff login credentials</p>
+              <p className="text-xs text-gray-400 mt-1">{t('settings.shopCodeHint')}</p>
             </div>
 
             {/* Brand Color */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Shop Color</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.brandColor')}</label>
               <div className="flex items-center gap-3">
                 <input
                   type="color"
@@ -196,17 +203,17 @@ export default function SettingsPage() {
                   style={{ backgroundColor: form.brandColor }}
                 />
               </div>
-              <p className="text-xs text-gray-400 mt-1">Used for your shop branding and accents</p>
+              <p className="text-xs text-gray-400 mt-1">{t('settings.shopColorDesc')}</p>
             </div>
 
             <Input
-              label="Phone"
+              label={t('auth.phone')}
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
             />
 
             <Input
-              label="Address"
+              label={t('settings.address')}
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
             />
@@ -214,7 +221,7 @@ export default function SettingsPage() {
             {/* Exchange Rate */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Exchange Rate (1 USD = ? KHR)
+                {t('settings.exchangeRate')}
               </label>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 flex-1">
@@ -230,12 +237,12 @@ export default function SettingsPage() {
                 </div>
               </div>
               <p className="text-xs text-gray-400 mt-1">
-                Used to show prices in both USD and KHR. Example: $1.00 = {parseInt(form.exchangeRate || '4100').toLocaleString()}៛
+                {t('settings.exchangeRateDesc')}. $1.00 = {parseInt(form.exchangeRate || '4100').toLocaleString()}៛
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.timezone')}</label>
               <select
                 value={form.timezone}
                 onChange={(e) => setForm({ ...form, timezone: e.target.value })}
@@ -251,8 +258,8 @@ export default function SettingsPage() {
 
             {/* Sugar Levels */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Sugar Levels</label>
-              <p className="text-xs text-gray-400 mb-2">Define the sugar options available for your drinks</p>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings.sugarLevels')}</label>
+              <p className="text-xs text-gray-400 mb-2">{t('settings.sugarLevelsDesc')}</p>
               <div className="flex flex-wrap gap-2 mb-2">
                 {form.sugarLevels.map((level, i) => (
                   <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 text-sm text-gray-700">
@@ -309,15 +316,15 @@ export default function SettingsPage() {
                   className="rounded border-gray-300 h-4 w-4"
                 />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Loyalty Program</p>
-                  <p className="text-xs text-gray-400">Reward returning customers with a discount after reaching visit target</p>
+                  <p className="text-sm font-medium text-gray-900">{t('settings.loyalty')}</p>
+                  <p className="text-xs text-gray-400">{t('settings.loyaltyDesc')}</p>
                 </div>
               </label>
 
               {form.loyaltyEnabled && (
                 <div className="border-t border-gray-100 px-4 py-4 space-y-4 bg-gray-50">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Visits needed for reward</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.visitsNeeded')}</label>
                     <Input
                       type="number"
                       value={form.loyaltyTarget}
@@ -325,32 +332,32 @@ export default function SettingsPage() {
                       placeholder="10"
                       className="w-32"
                     />
-                    <p className="text-xs text-gray-400 mt-1">Customer gets a discount after this many orders</p>
+                    <p className="text-xs text-gray-400 mt-1">{t('settings.visitsDesc')}</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Discount type</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.discountType')}</label>
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={() => setForm({ ...form, loyaltyDiscountType: 'percentage' })}
                         className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${form.loyaltyDiscountType === 'percentage' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
                       >
-                        Percentage (%)
+                        {t('products.percentage')}
                       </button>
                       <button
                         type="button"
                         onClick={() => setForm({ ...form, loyaltyDiscountType: 'fixed' })}
                         className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${form.loyaltyDiscountType === 'fixed' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
                       >
-                        Fixed Amount ($)
+                        {t('settings.fixedAmount')}
                       </button>
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Discount value {form.loyaltyDiscountType === 'percentage' ? '(%)' : '($)'}
+                      {t('settings.discountValue')} {form.loyaltyDiscountType === 'percentage' ? '(%)' : '($)'}
                     </label>
                     <Input
                       type="number"
@@ -362,8 +369,8 @@ export default function SettingsPage() {
                     />
                     <p className="text-xs text-gray-400 mt-1">
                       {form.loyaltyDiscountType === 'percentage'
-                        ? `Customer gets ${form.loyaltyDiscountValue || '0'}% off their order`
-                        : `Customer gets $${form.loyaltyDiscountValue || '0'} off their order`
+                        ? `${form.loyaltyDiscountValue || '0'}% off`
+                        : `$${form.loyaltyDiscountValue || '0'} off`
                       }
                     </p>
                   </div>
@@ -373,10 +380,10 @@ export default function SettingsPage() {
 
             <div className="flex items-center gap-3">
               <Button type="submit" disabled={saving}>
-                {saving ? 'Saving...' : 'Save Changes'}
+                {saving ? t('settings.saving') : t('settings.save')}
               </Button>
               {saved && (
-                <span className="text-sm text-green-600 font-medium">Saved successfully!</span>
+                <span className="text-sm text-green-600 font-medium">{t('settings.savedSuccess')}</span>
               )}
             </div>
           </form>

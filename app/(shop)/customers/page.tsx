@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
-import { formatCurrency, formatDate, toKHR } from '@/lib/utils'
+import { formatCurrency, formatDate, toKHR, cn } from '@/lib/utils'
 import { Search, UserCheck, Phone, ShoppingCart, Award, Plus, Edit2, Trash2 } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 
 interface Customer {
   id: string
@@ -33,6 +34,7 @@ interface CustomerDetail extends Customer {
 }
 
 export default function CustomersPage() {
+  const { t, bilingual, lang } = useI18n()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [search, setSearch] = useState('')
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerDetail | null>(null)
@@ -129,15 +131,19 @@ export default function CustomersPage() {
   const totalRevenue = customers.reduce((s, c) => s + c.totalSpent, 0)
   const avgVisits = totalCustomers > 0 ? Math.round(customers.reduce((s, c) => s + c.totalVisits, 0) / totalCustomers) : 0
 
+  const [titleMain, titleSub] = bilingual('customers.title')
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-          <p className="text-sm text-gray-500">{totalCustomers} registered customers</p>
+          <h1 className={cn('text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>{titleMain}
+            <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{titleSub}</span>
+          </h1>
+          <p className="text-sm text-gray-500">{totalCustomers} {t('customers.registered')}</p>
         </div>
         <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-1" /> Add Customer
+          <Plus className="h-4 w-4 mr-1" /> {t('customers.add')}
         </Button>
       </div>
 
@@ -149,7 +155,7 @@ export default function CustomersPage() {
               <UserCheck className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Customers</p>
+              <p className="text-sm text-gray-500">{t('customers.totalCustomers')}</p>
               <p className="text-2xl font-bold text-gray-900">{totalCustomers}</p>
             </div>
           </CardContent>
@@ -160,7 +166,7 @@ export default function CustomersPage() {
               <ShoppingCart className="h-6 w-6 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Customer Revenue</p>
+              <p className="text-sm text-gray-500">{t('customers.customerRevenue')}</p>
               <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalRevenue)}</p>
               <p className="text-xs text-gray-400">{toKHR(totalRevenue, exchangeRate)}</p>
             </div>
@@ -172,7 +178,7 @@ export default function CustomersPage() {
               <Award className="h-6 w-6 text-purple-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Avg Visits</p>
+              <p className="text-sm text-gray-500">{t('customers.avgVisits')}</p>
               <p className="text-2xl font-bold text-gray-900">{avgVisits}</p>
             </div>
           </CardContent>
@@ -182,7 +188,7 @@ export default function CustomersPage() {
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-        <Input placeholder="Search by phone or name..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+        <Input placeholder={t('customers.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
       </div>
 
       {/* Customer List */}
@@ -190,12 +196,12 @@ export default function CustomersPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200">
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Customer</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Phone</th>
-              <th className="text-right py-3 px-4 font-medium text-gray-500">Visits</th>
-              <th className="text-right py-3 px-4 font-medium text-gray-500">Total Spent</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Last Visit</th>
-              <th className="text-right py-3 px-4 font-medium text-gray-500">Actions</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">{t('customers.name')}</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">{t('customers.phone')}</th>
+              <th className="text-right py-3 px-4 font-medium text-gray-500">{t('customers.totalVisits')}</th>
+              <th className="text-right py-3 px-4 font-medium text-gray-500">{t('customers.totalSpent')}</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">{t('customers.lastVisit')}</th>
+              <th className="text-right py-3 px-4 font-medium text-gray-500">{t('common.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -221,7 +227,7 @@ export default function CustomersPage() {
                 </td>
                 <td className="py-3 px-4 text-right">
                   <span className="font-medium text-gray-900">{customer.totalVisits}</span>
-                  {loyaltyEnabled && customer.totalVisits >= loyaltyTarget && <Badge variant="success" className="ml-2 text-[10px]">Loyal</Badge>}
+                  {loyaltyEnabled && customer.totalVisits >= loyaltyTarget && <Badge variant="success" className="ml-2 text-[10px]">{t('customers.loyalty')}</Badge>}
                 </td>
                 <td className="py-3 px-4 text-right">
                   <p className="font-medium text-gray-900">{formatCurrency(customer.totalSpent)}</p>
@@ -232,10 +238,10 @@ export default function CustomersPage() {
                 </td>
                 <td className="py-3 px-4 text-right">
                   <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={(e) => openEdit(customer, e)} className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-brand-600 hover:bg-brand-50" title="Edit">
+                    <button onClick={(e) => openEdit(customer, e)} className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-brand-600 hover:bg-brand-50" title={t('customers.edit')}>
                       <Edit2 className="h-4 w-4" />
                     </button>
-                    <button onClick={() => setShowDeleteConfirm(customer)} className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50" title="Delete">
+                    <button onClick={() => setShowDeleteConfirm(customer)} className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50" title={t('customers.delete')}>
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
@@ -245,7 +251,7 @@ export default function CustomersPage() {
             {customers.length === 0 && (
               <tr>
                 <td colSpan={6} className="py-8 text-center text-gray-400">
-                  {search ? 'No customers found' : 'No customers yet. Add one or they will appear after POS orders.'}
+                  {search ? t('customers.noCustomersFound') : t('customers.noCustomersYet')}
                 </td>
               </tr>
             )}
@@ -254,23 +260,23 @@ export default function CustomersPage() {
       </div>
 
       {/* Create / Edit Customer Modal */}
-      <Modal isOpen={showFormModal} onClose={() => setShowFormModal(false)} title={editingCustomer ? 'Edit Customer' : 'Add Customer'}>
+      <Modal isOpen={showFormModal} onClose={() => setShowFormModal(false)} title={editingCustomer ? t('customers.edit') : t('customers.add')}>
         <form onSubmit={handleSave} className="space-y-4">
           <Input
-            label="Phone (required)"
+            label={t('customers.phoneRequired')}
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
             placeholder="012 345 678"
             required
           />
           <Input
-            label="Name (optional)"
+            label={t('customers.nameOptional')}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            placeholder="Customer name"
+            placeholder={t('customers.name')}
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Note (optional)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('customers.noteOptional')}</label>
             <textarea
               value={form.note}
               onChange={(e) => setForm({ ...form, note: e.target.value })}
@@ -279,28 +285,28 @@ export default function CustomersPage() {
             />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Saving...' : editingCustomer ? 'Update Customer' : 'Add Customer'}
+            {loading ? '...' : editingCustomer ? t('customers.updateCustomer') : t('customers.addCustomer')}
           </Button>
         </form>
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal isOpen={!!showDeleteConfirm} onClose={() => setShowDeleteConfirm(null)} title="Delete Customer">
+      <Modal isOpen={!!showDeleteConfirm} onClose={() => setShowDeleteConfirm(null)} title={t('customers.deleteCustomer')}>
         {showDeleteConfirm && (
           <div className="space-y-4">
             <p className="text-sm text-gray-600">
-              Are you sure you want to delete <strong>{showDeleteConfirm.name || showDeleteConfirm.phone}</strong>? Their purchase history will be unlinked but orders will remain.
+              {t('customers.deleteMsg')} (<strong>{showDeleteConfirm.name || showDeleteConfirm.phone}</strong>)
             </p>
             <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => setShowDeleteConfirm(null)}>Cancel</Button>
-              <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete}>Delete Customer</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowDeleteConfirm(null)}>{t('common.cancel')}</Button>
+              <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete}>{t('customers.deleteCustomer')}</Button>
             </div>
           </div>
         )}
       </Modal>
 
       {/* Customer Detail Modal */}
-      <Modal isOpen={showDetail} onClose={() => setShowDetail(false)} title="Customer Details" className="max-w-lg">
+      <Modal isOpen={showDetail} onClose={() => setShowDetail(false)} title={t('customers.customerDetails')} className="max-w-lg">
         {selectedCustomer && (
           <div className="space-y-5">
             {/* Header */}
@@ -310,12 +316,12 @@ export default function CustomersPage() {
                   <UserCheck className="h-7 w-7 text-brand-600" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-gray-900">{selectedCustomer.name || 'No name'}</p>
+                  <p className="text-lg font-bold text-gray-900">{selectedCustomer.name || '—'}</p>
                   <p className="text-sm text-gray-500 flex items-center gap-1"><Phone className="h-3.5 w-3.5" /> {selectedCustomer.phone}</p>
                 </div>
               </div>
               <Button variant="outline" size="sm" onClick={() => { setShowDetail(false); openEdit(selectedCustomer) }}>
-                <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
+                <Edit2 className="h-3.5 w-3.5 mr-1" /> {t('customers.edit')}
               </Button>
             </div>
 
@@ -323,18 +329,18 @@ export default function CustomersPage() {
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-lg bg-gray-50 p-3 text-center">
                 <p className="text-2xl font-bold text-gray-900">{selectedCustomer.totalVisits}</p>
-                <p className="text-xs text-gray-500">Visits</p>
+                <p className="text-xs text-gray-500">{t('customers.totalVisits')}</p>
               </div>
               <div className="rounded-lg bg-gray-50 p-3 text-center">
                 <p className="text-lg font-bold text-gray-900">{formatCurrency(selectedCustomer.totalSpent)}</p>
                 <p className="text-[11px] text-gray-400">{toKHR(selectedCustomer.totalSpent, exchangeRate)}</p>
-                <p className="text-xs text-gray-500">Spent</p>
+                <p className="text-xs text-gray-500">{t('customers.spent')}</p>
               </div>
               <div className="rounded-lg bg-gray-50 p-3 text-center">
                 <p className="text-lg font-bold text-gray-900">
                   {selectedCustomer.totalVisits > 0 ? formatCurrency(selectedCustomer.totalSpent / selectedCustomer.totalVisits) : '$0'}
                 </p>
-                <p className="text-xs text-gray-500">Avg/Visit</p>
+                <p className="text-xs text-gray-500">{t('customers.avgPerVisit')}</p>
               </div>
             </div>
 
@@ -344,7 +350,7 @@ export default function CustomersPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Award className="h-5 w-5 text-amber-600" />
-                    <span className="text-sm font-medium text-amber-800">Loyalty Progress</span>
+                    <span className="text-sm font-medium text-amber-800">{t('pos.loyaltyProgress')}</span>
                   </div>
                   <span className="text-sm font-bold text-amber-700">{selectedCustomer.totalVisits % loyaltyTarget} / {loyaltyTarget}</span>
                 </div>
@@ -353,35 +359,35 @@ export default function CustomersPage() {
                 </div>
                 <p className="text-xs text-amber-600 mt-1">
                   {selectedCustomer.totalVisits >= loyaltyTarget
-                    ? `Earned ${Math.floor(selectedCustomer.totalVisits / loyaltyTarget)} reward(s)! ${loyaltyTarget - (selectedCustomer.totalVisits % loyaltyTarget || loyaltyTarget)} more for next.`
-                    : `${loyaltyTarget - selectedCustomer.totalVisits} more visits until reward!`}
+                    ? `${Math.floor(selectedCustomer.totalVisits / loyaltyTarget)} ${t('customers.earnedRewards')} ${loyaltyTarget - (selectedCustomer.totalVisits % loyaltyTarget || loyaltyTarget)} ${t('customers.moreForNextReward')}`
+                    : `${loyaltyTarget - selectedCustomer.totalVisits} ${t('customers.moreForNext')}`}
                   {' '}({loyaltyDiscountType === 'percentage' ? `${loyaltyDiscountValue}% off` : `$${loyaltyDiscountValue} off`})
                 </p>
               </div>
             )}
             {!loyaltyEnabled && selectedCustomer.totalVisits > 0 && (
-              <p className="text-xs text-gray-400 text-center">Loyalty program is not active. Enable it in Settings.</p>
+              <p className="text-xs text-gray-400 text-center">{t('customers.loyaltyNotActive')}</p>
             )}
 
             {/* Note */}
             {selectedCustomer.note && (
               <div className="rounded-lg bg-gray-50 p-3">
-                <p className="text-xs text-gray-500 mb-1">Note</p>
+                <p className="text-xs text-gray-500 mb-1">{t('customers.noteOptional')}</p>
                 <p className="text-sm text-gray-700">{selectedCustomer.note}</p>
               </div>
             )}
 
             {/* Purchase History */}
             <div>
-              <p className="text-sm font-semibold text-gray-900 mb-2">Purchase History</p>
+              <p className="text-sm font-semibold text-gray-900 mb-2">{t('customers.purchaseHistory')}</p>
               {selectedCustomer.orders.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-4">No orders yet</p>
+                <p className="text-sm text-gray-400 text-center py-4">{t('customers.noOrdersYet')}</p>
               ) : (
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {selectedCustomer.orders.map((order) => (
                     <div key={order.id} className="rounded-lg border border-gray-100 p-3">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-gray-900">Order #{order.orderNumber}</span>
+                        <span className="text-sm font-medium text-gray-900">{t('customers.order')} #{order.orderNumber}</span>
                         <div className="text-right">
                           <span className="text-sm font-bold text-gray-900">{formatCurrency(order.total)}</span>
                           <p className="text-[10px] text-gray-400">{toKHR(order.total, exchangeRate)}</p>
@@ -402,7 +408,7 @@ export default function CustomersPage() {
             </div>
 
             <p className="text-xs text-gray-400 text-center">
-              Customer since {formatDate(selectedCustomer.createdAt)}
+              {t('customers.customerSince')} {formatDate(selectedCustomer.createdAt)}
             </p>
           </div>
         )}

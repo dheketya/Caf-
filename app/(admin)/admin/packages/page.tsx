@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, cn } from '@/lib/utils'
 import { Plus, Package, Edit2, Trash2 } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 
 interface PackageData {
   id: string
@@ -46,6 +47,7 @@ export default function PackagesPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState(emptyForm)
+  const { t, bilingual, lang } = useI18n()
 
   useEffect(() => { loadPackages() }, [])
 
@@ -130,12 +132,17 @@ export default function PackagesPage() {
     }))
   }
 
+  const [mainTitle, subTitle] = bilingual('adminPkg.title')
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Packages</h1>
+        <h1 className={cn('text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>
+          {mainTitle}
+          <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{subTitle}</span>
+        </h1>
         <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-1" /> New Package
+          <Plus className="h-4 w-4 mr-1" /> {t('adminPkg.newPackage')}
         </Button>
       </div>
 
@@ -154,8 +161,8 @@ export default function PackagesPage() {
                     {pkg.name}
                   </CardTitle>
                   <div className="flex items-center gap-1">
-                    {pkg.isDefault && <Badge variant="info">Default</Badge>}
-                    {!pkg.isVisible && <Badge variant="warning">Hidden</Badge>}
+                    {pkg.isDefault && <Badge variant="info">{t('adminPkg.default')}</Badge>}
+                    {!pkg.isVisible && <Badge variant="warning">{t('adminPkg.hidden')}</Badge>}
                   </div>
                 </div>
               </CardHeader>
@@ -166,19 +173,19 @@ export default function PackagesPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-xs text-gray-400">Sale Limit</p>
-                    <p className="font-semibold">{pkg.saleLimit?.toLocaleString() ?? 'Unlimited'}</p>
+                    <p className="text-xs text-gray-400">{t('adminPkg.saleLimit')}</p>
+                    <p className="font-semibold">{pkg.saleLimit?.toLocaleString() ?? t('auth.unlimited')}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400">Active Shops</p>
+                    <p className="text-xs text-gray-400">{t('adminPkg.activeShops')}</p>
                     <p className="font-semibold">{pkg._count.shops}</p>
                   </div>
                 </div>
 
                 <div>
-                  <p className="text-xs text-gray-400">Pricing</p>
+                  <p className="text-xs text-gray-400">{t('adminPkg.pricing')}</p>
                   {pkg.monthlyPrice === 0 ? (
-                    <p className="font-semibold text-green-600">Free</p>
+                    <p className="font-semibold text-green-600">{t('auth.free')}</p>
                   ) : (
                     <div>
                       <p className="font-semibold">
@@ -198,11 +205,11 @@ export default function PackagesPage() {
 
                 <div className="flex gap-2 pt-2 border-t border-gray-100">
                   <Button variant="outline" size="sm" onClick={() => openEdit(pkg)}>
-                    <Edit2 className="h-3 w-3 mr-1" /> Edit
+                    <Edit2 className="h-3 w-3 mr-1" /> {t('common.edit')}
                   </Button>
                   {pkg._count.shops === 0 && (
                     <Button variant="ghost" size="sm" onClick={() => handleDelete(pkg)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                      <Trash2 className="h-3 w-3 mr-1" /> Delete
+                      <Trash2 className="h-3 w-3 mr-1" /> {t('common.delete')}
                     </Button>
                   )}
                 </div>
@@ -216,26 +223,26 @@ export default function PackagesPage() {
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title={editingId ? 'Edit Package' : 'New Package'}
+        title={editingId ? t('adminPkg.editPackage') : t('adminPkg.newPackage')}
         className="max-w-xl"
       >
         <form onSubmit={handleSave} className="space-y-4">
           <Input
-            label="Name"
+            label={t('products.categoryName')}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
           />
 
           <Input
-            label="Description"
+            label={t('adminPkg.description')}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
-            placeholder="Short description shown on registration page"
+            placeholder={t('adminPkg.descHint')}
           />
 
           <Input
-            label="Sale Limit (blank = unlimited)"
+            label={t('adminPkg.saleLimitHint')}
             type="number"
             value={form.saleLimit}
             onChange={(e) => setForm({ ...form, saleLimit: e.target.value })}
@@ -244,7 +251,7 @@ export default function PackagesPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Monthly Price ($)"
+              label={t('adminPkg.monthlyPrice')}
               type="number"
               step="0.01"
               value={form.monthlyPrice}
@@ -252,7 +259,7 @@ export default function PackagesPage() {
               required
             />
             <Input
-              label="Annual Price ($)"
+              label={t('adminPkg.annualPrice')}
               type="number"
               step="0.01"
               value={form.annualPrice}
@@ -263,12 +270,12 @@ export default function PackagesPage() {
 
           {parseFloat(form.monthlyPrice) > 0 && parseFloat(form.annualPrice) > 0 && (
             <p className="text-sm text-green-600">
-              Annual discount: {Math.round((1 - parseFloat(form.annualPrice) / (parseFloat(form.monthlyPrice) * 12)) * 100)}% off
+              {t('adminPkg.annualDiscount')}: {Math.round((1 - parseFloat(form.annualPrice) / (parseFloat(form.monthlyPrice) * 12)) * 100)}% off
             </p>
           )}
 
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">Modules</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">{t('adminPkg.modules')}</p>
             <div className="grid grid-cols-3 gap-2">
               {ALL_MODULES.map((mod) => (
                 <label key={mod} className="flex items-center gap-2 text-sm">
@@ -292,7 +299,7 @@ export default function PackagesPage() {
                 onChange={(e) => setForm({ ...form, isDefault: e.target.checked })}
                 className="rounded border-gray-300"
               />
-              Default plan (auto-assigned)
+              {t('adminPkg.defaultPlan')}
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -301,7 +308,7 @@ export default function PackagesPage() {
                 onChange={(e) => setForm({ ...form, isVisible: e.target.checked })}
                 className="rounded border-gray-300"
               />
-              Visible on registration
+              {t('adminPkg.visibleRegistration')}
             </label>
           </div>
 
@@ -310,7 +317,7 @@ export default function PackagesPage() {
           )}
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Saving...' : editingId ? 'Update Package' : 'Create Package'}
+            {loading ? t('settings.saving') : editingId ? t('adminPkg.updatePackage') : t('adminPkg.createPackage')}
           </Button>
         </form>
       </Modal>

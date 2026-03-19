@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { Send, ImageIcon } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 
 interface Message {
   id: string
@@ -17,6 +18,7 @@ interface Message {
 }
 
 export default function ChatPage() {
+  const { t, bilingual, lang } = useI18n()
   const { data: session } = useSession()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -54,17 +56,21 @@ export default function ChatPage() {
     setSending(false)
   }
 
+  const [titleMain, titleSub] = bilingual('chat.title')
+
   return (
     <div className="flex flex-col h-[calc(100vh-7rem)]">
       <div className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Chat with Support</h1>
-        <p className="text-sm text-gray-500">Contact the platform owner for upgrade requests or support</p>
+        <h1 className={cn('text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>{titleMain}
+          <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{titleSub}</span>
+        </h1>
+        <p className="text-sm text-gray-500">{t('chat.contactSupport')}</p>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-white rounded-xl border border-gray-200 p-4 space-y-4">
         {messages.length === 0 ? (
           <p className="text-center text-gray-400 py-8">
-            Start a conversation with the platform owner
+            {t('chat.startConversation')}
           </p>
         ) : (
           messages.map((msg) => {
@@ -92,7 +98,7 @@ export default function ChatPage() {
 
       <form onSubmit={handleSend} className="flex gap-2 mt-4">
         <Input
-          placeholder="Type a message..."
+          placeholder={t('chat.typeMessage')}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           className="flex-1"

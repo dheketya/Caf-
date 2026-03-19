@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { cn, formatCurrency, toKHR } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 import {
   Search, Plus, Minus, Trash2, ShoppingCart,
   Banknote, QrCode, Printer, UserPlus, X,
@@ -72,6 +73,7 @@ function applyProductDiscount(price: number, discountType: string | null, discou
 
 export default function POSPage() {
   const { data: session } = useSession()
+  const { t, bilingual, lang } = useI18n()
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [shopInfo, setShopInfo] = useState<ShopInfo>({ sugarLevels: null, exchangeRate: 4100, name: '', phone: '', address: '', loyaltyEnabled: false, loyaltyTarget: 10, loyaltyDiscountType: 'percentage', loyaltyDiscountValue: 10 })
@@ -286,8 +288,8 @@ export default function POSPage() {
           discountType: discountAmount > 0 ? 'fixed' : undefined,
           discountValue: discountAmount > 0 ? discountAmount : undefined,
           discountReason: [
-            loyaltyDiscountAmount > 0 ? `Loyalty Reward (-${formatCurrency(loyaltyDiscountAmount)})` : '',
-            manualDiscountAmount > 0 ? `Manual Discount (-${formatCurrency(manualDiscountAmount)})` : '',
+            loyaltyDiscountAmount > 0 ? `${t('pos.loyaltyLabel')} (-${formatCurrency(loyaltyDiscountAmount)})` : '',
+            manualDiscountAmount > 0 ? `${t('pos.manualDiscount')} (-${formatCurrency(manualDiscountAmount)})` : '',
           ].filter(Boolean).join(' + ') || undefined,
           paymentMethod,
           amountTendered: totalTendered > 0 ? totalTendered : undefined,
@@ -323,7 +325,7 @@ export default function POSPage() {
     if (!content) return
     const printWindow = window.open('', '', 'width=800,height=900')
     if (!printWindow) return
-    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice</title>
+    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${t('pos.invoice')}</title>
 <style>
   @page { size: 80mm auto; margin: 4mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -389,6 +391,13 @@ export default function POSPage() {
   const customPrice = customProduct ? applyProductDiscount(customRawPrice, customProduct.discountType, customProduct.discountValue) : 0
   const customHasDiscount = customProduct?.discountType && customProduct?.discountValue
 
+  // Payment method labels for invoice
+  const payLabel: Record<string, string> = {
+    CASH: t('pos.cash'),
+    QR_EWALLET: t('pos.bank'),
+    SPLIT: t('pos.cashAndBank'),
+  }
+
   return (
     <div className="flex gap-6 h-[calc(100vh-7rem)]">
       {/* Product Grid */}
@@ -396,12 +405,12 @@ export default function POSPage() {
         <div className="flex items-center gap-3 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input placeholder="Search products..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+            <Input placeholder={t('pos.search')} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
           </div>
         </div>
 
         <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-          <button onClick={() => setActiveCategory(null)} className={cn('px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors', !activeCategory ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}>All</button>
+          <button onClick={() => setActiveCategory(null)} className={cn('px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors', !activeCategory ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}>{t('pos.all')}</button>
           {categories.map((cat) => (
             <button key={cat.id} onClick={() => setActiveCategory(cat.id)} className={cn('px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors', activeCategory === cat.id ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}>{cat.name}</button>
           ))}
@@ -426,10 +435,10 @@ export default function POSPage() {
                   product.isOutOfStock ? 'bg-gray-50 border-gray-200 opacity-60' : 'bg-white border-gray-200 hover:border-brand-300'
                 )}
               >
-                {product.isOutOfStock && <Badge variant="warning" className="absolute top-2 right-2 text-[10px]">Out of stock</Badge>}
+                {product.isOutOfStock && <Badge variant="warning" className="absolute top-2 right-2 text-[10px]">{t('products.outOfStock')}</Badge>}
                 {hasProductDiscount && !product.isOutOfStock && (
                   <span className="absolute top-2 right-2 text-[9px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded">
-                    {product.discountType === 'percentage' ? `${product.discountValue}% OFF` : `$${product.discountValue} OFF`}
+                    {product.discountType === 'percentage' ? `${product.discountValue}% ${t('pos.off')}` : `$${product.discountValue} ${t('pos.off')}`}
                   </span>
                 )}
                 <div className="h-10 w-10 rounded-lg bg-gray-100 mb-2 flex items-center justify-center text-lg shrink-0">
@@ -440,15 +449,15 @@ export default function POSPage() {
                   <div className="flex items-center gap-1.5">
                     {hasProductDiscount && (
                       <span className="text-[11px] text-gray-400 line-through">
-                        {availableSizes.length > 0 ? `${formatCurrency(rawPrice)}` : formatCurrency(rawPrice)}
+                        {formatCurrency(rawPrice)}
                       </span>
                     )}
                     <p className={cn('text-sm font-semibold', hasProductDiscount ? 'text-red-600' : 'text-brand-600')}>
-                      {availableSizes.length > 0 ? `from ${formatCurrency(displayPrice)}` : formatCurrency(displayPrice)}
+                      {availableSizes.length > 0 ? `${t('pos.from')} ${formatCurrency(displayPrice)}` : formatCurrency(displayPrice)}
                     </p>
                   </div>
                   <p className="text-[10px] text-gray-400">
-                    {availableSizes.length > 0 ? `from ${toKHR(displayPrice, shopInfo.exchangeRate)}` : toKHR(displayPrice, shopInfo.exchangeRate)}
+                    {availableSizes.length > 0 ? `${t('pos.from')} ${toKHR(displayPrice, shopInfo.exchangeRate)}` : toKHR(displayPrice, shopInfo.exchangeRate)}
                   </p>
                 </div>
               </button>
@@ -461,13 +470,13 @@ export default function POSPage() {
       <Card className="w-80 flex flex-col shrink-0">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
           <ShoppingCart className="h-5 w-5 text-gray-500" />
-          <h2 className="font-semibold text-gray-900">Current Order</h2>
+          <h2 className={cn('font-semibold text-gray-900', lang === 'km' && 'font-khmer')}>{t('pos.cart')}</h2>
           <Badge className="ml-auto">{cart.reduce((s, i) => s + i.quantity, 0)}</Badge>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {cart.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-8">Add products to start an order</p>
+            <p className={cn('text-sm text-gray-400 text-center py-8', lang === 'km' && 'font-khmer')}>{t('pos.addItems')}</p>
           ) : cart.map((item) => (
             <div key={item.id} className="pb-3 border-b border-gray-50">
               <div className="flex items-start gap-3">
@@ -475,8 +484,8 @@ export default function POSPage() {
                   <p className="text-sm font-medium text-gray-900 truncate">{item.product.name}</p>
                   {(item.sizeName || item.sugarLevel) && (
                     <div className="flex gap-2 mt-0.5">
-                      {item.sizeName && <span className="text-[11px] text-gray-500">Size: <span className="font-medium text-gray-700">{item.sizeName}</span></span>}
-                      {item.sugarLevel && <span className="text-[11px] text-gray-500">Sugar: <span className="font-medium text-gray-700">{item.sugarLevel}</span></span>}
+                      {item.sizeName && <span className="text-[11px] text-gray-500">{t('pos.size')}: <span className="font-medium text-gray-700">{item.sizeName}</span></span>}
+                      {item.sugarLevel && <span className="text-[11px] text-gray-500">{t('pos.sugar')}: <span className="font-medium text-gray-700">{item.sugarLevel}</span></span>}
                     </div>
                   )}
                   <div className="flex items-center gap-1.5 mt-0.5">
@@ -501,9 +510,9 @@ export default function POSPage() {
           <div className="px-4 py-2 border-t border-gray-100">
             <div className="flex gap-2">
               <select value={discountType} onChange={(e) => setDiscountType(e.target.value as any)} className="text-xs rounded border border-gray-200 px-2 py-1">
-                <option value="">No discount</option>
+                <option value="">{t('pos.noDiscount')}</option>
                 <option value="percentage">%</option>
-                <option value="fixed">Fixed</option>
+                <option value="fixed">{t('pos.fixed')}</option>
               </select>
               {discountType && <Input type="number" placeholder={discountType === 'percentage' ? '10' : '5.00'} value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} className="h-7 text-xs" />}
             </div>
@@ -512,32 +521,32 @@ export default function POSPage() {
 
         <div className="px-4 py-3 border-t border-gray-200 space-y-1">
           <div className="flex justify-between text-sm text-gray-500">
-            <span>Subtotal</span>
+            <span>{t('pos.subtotal')}</span>
             <span className={discountAmount > 0 ? 'line-through text-gray-400' : ''}>{formatCurrency(subtotal)}</span>
           </div>
           {loyaltyDiscountAmount > 0 && (
             <div className="flex justify-between text-sm text-amber-600">
-              <span>🎉 Loyalty ({shopInfo.loyaltyDiscountType === 'percentage' ? `${shopInfo.loyaltyDiscountValue}%` : `$${shopInfo.loyaltyDiscountValue}`})</span>
+              <span>{t('pos.loyaltyLabel')} ({shopInfo.loyaltyDiscountType === 'percentage' ? `${shopInfo.loyaltyDiscountValue}%` : `$${shopInfo.loyaltyDiscountValue}`})</span>
               <span>-{formatCurrency(loyaltyDiscountAmount)}</span>
             </div>
           )}
           {manualDiscountAmount > 0 && (
             <div className="flex justify-between text-sm text-green-600">
-              <span>Discount</span>
+              <span>{t('pos.discount')}</span>
               <span>-{formatCurrency(manualDiscountAmount)}</span>
             </div>
           )}
-          <div className="flex justify-between text-base font-bold text-gray-900 pt-1"><span>Total</span><span>{formatCurrency(total)}</span></div>
+          <div className="flex justify-between text-base font-bold text-gray-900 pt-1"><span>{t('pos.total')}</span><span>{formatCurrency(total)}</span></div>
           <div className="flex justify-between text-xs text-gray-400"><span></span><span>{toKHR(total, shopInfo.exchangeRate)}</span></div>
         </div>
 
         <div className="p-4 border-t border-gray-200">
-          <Button className="w-full" size="lg" disabled={cart.length === 0} onClick={() => setShowPayment(true)}>Charge {formatCurrency(total)}</Button>
+          <Button className="w-full" size="lg" disabled={cart.length === 0} onClick={() => setShowPayment(true)}>{t('pos.charge')} {formatCurrency(total)}</Button>
         </div>
       </Card>
 
       {/* Customization Modal */}
-      <Modal isOpen={!!customProduct} onClose={() => setCustomProduct(null)} title={`Customize: ${customProduct?.name || ''}`}>
+      <Modal isOpen={!!customProduct} onClose={() => setCustomProduct(null)} title={`${t('pos.customize')}: ${customProduct?.name || ''}`}>
         {customProduct && (
           <div className="space-y-5">
             <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
@@ -553,7 +562,7 @@ export default function POSPage() {
             {/* Size selection */}
             {customAvailableSizes.length > 0 && (
               <div>
-                <p className="text-sm font-semibold text-gray-900 mb-2">Size</p>
+                <p className={cn('text-sm font-semibold text-gray-900 mb-2', lang === 'km' && 'font-khmer')}>{t('pos.size')}</p>
                 <div className="grid grid-cols-3 gap-2">
                   {customAvailableSizes.map((size) => {
                     const sizeDiscounted = applyProductDiscount(size.price!, customProduct!.discountType, customProduct!.discountValue)
@@ -586,7 +595,7 @@ export default function POSPage() {
             {/* Sugar level selection */}
             {customProduct.hasSugarLevel && shopInfo.sugarLevels && shopInfo.sugarLevels.length > 0 && (
               <div>
-                <p className="text-sm font-semibold text-gray-900 mb-2">Sugar Level</p>
+                <p className={cn('text-sm font-semibold text-gray-900 mb-2', lang === 'km' && 'font-khmer')}>{t('pos.selectSugar')}</p>
                 <div className="flex flex-wrap gap-2">
                   {shopInfo.sugarLevels.map((level) => (
                     <button
@@ -609,7 +618,7 @@ export default function POSPage() {
 
             {/* Price */}
             <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-              <span className="text-sm text-gray-500">Item price</span>
+              <span className={cn('text-sm text-gray-500', lang === 'km' && 'font-khmer')}>{t('pos.itemPrice')}</span>
               <div className="text-right">
                 {customHasDiscount && (
                   <span className="text-xs text-gray-400 line-through mr-2">{formatCurrency(customRawPrice)}</span>
@@ -620,14 +629,14 @@ export default function POSPage() {
             </div>
 
             <Button className="w-full" size="lg" onClick={confirmCustomization}>
-              Add to Order
+              {t('pos.addToCart')}
             </Button>
           </div>
         )}
       </Modal>
 
       {/* Payment Modal */}
-      <Modal isOpen={showPayment} onClose={() => setShowPayment(false)} title="Complete Payment">
+      <Modal isOpen={showPayment} onClose={() => setShowPayment(false)} title={t('pos.payment')}>
         <div className="space-y-3">
           <div className="text-center">
             {discountAmount > 0 && (
@@ -636,10 +645,10 @@ export default function POSPage() {
             <p className="text-2xl font-bold text-gray-900">{formatCurrency(total)} <span className="text-sm font-normal text-gray-400">{toKHR(total, shopInfo.exchangeRate)}</span></p>
             {discountAmount > 0 && (
               <p className="text-xs text-green-600 font-medium">
-                {loyaltyDiscountAmount > 0 && `🎉 Loyalty -${formatCurrency(loyaltyDiscountAmount)}`}
+                {loyaltyDiscountAmount > 0 && `${t('pos.loyaltyLabel')} -${formatCurrency(loyaltyDiscountAmount)}`}
                 {loyaltyDiscountAmount > 0 && manualDiscountAmount > 0 && ' + '}
-                {manualDiscountAmount > 0 && `Discount -${formatCurrency(manualDiscountAmount)}`}
-                {!loyaltyDiscountAmount && !manualDiscountAmount && `Save ${formatCurrency(discountAmount)}`}
+                {manualDiscountAmount > 0 && `${t('pos.discount')} -${formatCurrency(manualDiscountAmount)}`}
+                {!loyaltyDiscountAmount && !manualDiscountAmount && `${t('pos.save')} ${formatCurrency(discountAmount)}`}
               </p>
             )}
           </div>
@@ -647,7 +656,7 @@ export default function POSPage() {
           {/* Customer */}
           <div className="rounded-lg border border-gray-200 p-2.5 space-y-2">
             <p className="text-[10px] font-medium text-gray-400 flex items-center gap-1">
-              <UserPlus className="h-3 w-3" /> Customer (optional)
+              <UserPlus className="h-3 w-3" /> {t('pos.customerOptional')}
             </p>
             {attachedCustomer ? (
               <div className="space-y-2">
@@ -655,12 +664,12 @@ export default function POSPage() {
                   <div>
                     <p className="text-sm font-medium text-gray-900">{attachedCustomer.name || attachedCustomer.phone}</p>
                     <p className="text-xs text-gray-500">
-                      {attachedCustomer.phone} · {attachedCustomer.totalVisits} visits
+                      {attachedCustomer.phone} · {attachedCustomer.totalVisits} {t('pos.visits')}
                       {shopInfo.loyaltyEnabled && !loyaltyEligible && (
-                        <span className="text-gray-400"> · {shopInfo.loyaltyTarget - (nextVisit % shopInfo.loyaltyTarget)} to reward</span>
+                        <span className="text-gray-400"> · {shopInfo.loyaltyTarget - (nextVisit % shopInfo.loyaltyTarget)} {t('pos.toReward')}</span>
                       )}
                       {loyaltyEligible && (
-                        <span className="text-amber-600 font-medium"> · This is visit #{nextVisit}!</span>
+                        <span className="text-amber-600 font-medium"> · #{nextVisit}!</span>
                       )}
                     </p>
                   </div>
@@ -672,11 +681,11 @@ export default function POSPage() {
                   <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                     <span className="text-base">🎉</span>
                     <div className="flex-1">
-                      <p className="text-xs font-semibold text-amber-800">Loyalty Reward!</p>
+                      <p className={cn('text-xs font-semibold text-amber-800', lang === 'km' && 'font-khmer')}>{t('pos.loyaltyReward')}</p>
                       <p className="text-[11px] text-amber-600">
                         {shopInfo.loyaltyDiscountType === 'percentage'
-                          ? `${shopInfo.loyaltyDiscountValue}% off this order`
-                          : `$${shopInfo.loyaltyDiscountValue} off this order`
+                          ? `${shopInfo.loyaltyDiscountValue}% ${t('pos.offThisOrder')}`
+                          : `$${shopInfo.loyaltyDiscountValue} ${t('pos.offThisOrder')}`
                         }
                       </p>
                     </div>
@@ -687,26 +696,26 @@ export default function POSPage() {
               <div className="space-y-2">
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Phone number"
+                    placeholder={t('pos.customerPhone')}
                     value={customerPhone}
                     onChange={(e) => { setCustomerPhone(e.target.value); setCustomerNotFound(false) }}
                     className="flex-1"
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); lookupCustomer() } }}
                   />
                   <Button variant="outline" size="sm" onClick={lookupCustomer} disabled={customerSearching || !customerPhone.trim()}>
-                    {customerSearching ? '...' : 'Find'}
+                    {customerSearching ? '...' : t('pos.findCustomer')}
                   </Button>
                 </div>
                 {customerNotFound && (
                   <div className="rounded-lg bg-amber-50 border border-amber-100 p-3 space-y-2">
-                    <p className="text-xs text-amber-700">No customer found with this number. Add as new?</p>
+                    <p className={cn('text-xs text-amber-700', lang === 'km' && 'font-khmer')}>{t('pos.customerNotFound')}</p>
                     <Input
-                      placeholder="Name (optional)"
+                      placeholder={t('customers.nameOptional')}
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                     />
                     <Button size="sm" onClick={createNewCustomer} disabled={customerSearching} className="w-full">
-                      <UserPlus className="h-3.5 w-3.5 mr-1" /> Add New Customer
+                      <UserPlus className="h-3.5 w-3.5 mr-1" /> {t('pos.newCustomer')}
                     </Button>
                   </div>
                 )}
@@ -716,9 +725,9 @@ export default function POSPage() {
 
           <div className="grid grid-cols-3 gap-2">
             {[
-              { value: 'CASH', label: 'Cash', icon: <Banknote className="h-4 w-4" /> },
-              { value: 'QR_EWALLET', label: 'Bank Transfer', icon: <QrCode className="h-4 w-4" /> },
-              { value: 'SPLIT', label: 'Cash + Bank', icon: <><Banknote className="h-3.5 w-3.5" /><QrCode className="h-3.5 w-3.5" /></> },
+              { value: 'CASH', label: t('pos.cash'), icon: <Banknote className="h-4 w-4" /> },
+              { value: 'QR_EWALLET', label: t('pos.bank'), icon: <QrCode className="h-4 w-4" /> },
+              { value: 'SPLIT', label: t('pos.cashAndBank'), icon: <><Banknote className="h-3.5 w-3.5" /><QrCode className="h-3.5 w-3.5" /></> },
             ].map((method) => (
               <button key={method.value} onClick={() => setPaymentMethod(method.value)} className={cn('flex items-center justify-center gap-1 py-2 rounded-lg border-2 transition-colors', paymentMethod === method.value ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 hover:border-gray-300 text-gray-600')}>
                 {method.icon}<span className="text-xs font-medium">{method.label}</span>
@@ -734,7 +743,7 @@ export default function POSPage() {
                   onClick={() => { setAmountUsd(total.toFixed(2)); setAmountKhr('') }}
                   className="py-2 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 text-white font-bold shadow-sm hover:shadow-md transition-all"
                 >
-                  <span className="text-green-200 text-[9px] font-medium block leading-none">EXACT USD</span>
+                  <span className="text-green-200 text-[9px] font-medium block leading-none">{t('pos.exact')} USD</span>
                   <span className="text-base">${total.toFixed(2)}</span>
                 </button>
                 <button
@@ -742,7 +751,7 @@ export default function POSPage() {
                   onClick={() => { setAmountKhr(Math.round(total * shopInfo.exchangeRate).toString()); setAmountUsd('') }}
                   className="py-2 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold shadow-sm hover:shadow-md transition-all"
                 >
-                  <span className="text-blue-200 text-[9px] font-medium block leading-none">EXACT KHR</span>
+                  <span className="text-blue-200 text-[9px] font-medium block leading-none">{t('pos.exact')} KHR</span>
                   <span className="text-base">{toKHR(total, shopInfo.exchangeRate)}</span>
                 </button>
               </div>
@@ -750,7 +759,7 @@ export default function POSPage() {
               {/* USD + KHR bills in two rows */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <p className="text-[9px] font-bold text-green-600 uppercase tracking-wider mb-1">$ Dollar</p>
+                  <p className="text-[9px] font-bold text-green-600 uppercase tracking-wider mb-1">$ {t('pos.dollar')}</p>
                   <div className="grid grid-cols-4 gap-1">
                     {[1, 2, 5, 10, 20, 50, 100].map((amt) => (
                       <button
@@ -770,7 +779,7 @@ export default function POSPage() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-[9px] font-bold text-blue-600 uppercase tracking-wider mb-1">៛ Riel</p>
+                  <p className="text-[9px] font-bold text-blue-600 uppercase tracking-wider mb-1">៛ {t('pos.riel')}</p>
                   <div className="grid grid-cols-4 gap-1">
                     {[1000, 2000, 5000, 10000, 20000, 50000, 100000].map((amt) => (
                       <button
@@ -799,7 +808,7 @@ export default function POSPage() {
                     step="0.01"
                     value={amountUsd}
                     onChange={(e) => setAmountUsd(e.target.value)}
-                    placeholder="$ Custom"
+                    placeholder={t('pos.customUSD')}
                     className="h-8 text-xs border-green-200 focus:ring-green-500"
                   />
                 </div>
@@ -809,7 +818,7 @@ export default function POSPage() {
                     step="100"
                     value={amountKhr}
                     onChange={(e) => setAmountKhr(e.target.value)}
-                    placeholder="៛ Custom"
+                    placeholder={t('pos.customKHR')}
                     className="h-8 text-xs border-blue-200 focus:ring-blue-500"
                   />
                 </div>
@@ -820,7 +829,7 @@ export default function POSPage() {
                   totalTendered >= total ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
                 )}>
                   <span className={cn('text-xs font-medium', totalTendered >= total ? 'text-green-700' : 'text-red-600')}>
-                    {totalTendered >= total ? 'Change' : 'Remaining'}
+                    {totalTendered >= total ? t('pos.change') : t('pos.remaining')}
                   </span>
                   <span className={cn('text-sm font-bold', totalTendered >= total ? 'text-green-700' : 'text-red-600')}>
                     {totalTendered >= total
@@ -834,27 +843,27 @@ export default function POSPage() {
           )}
           {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
           <Button className="w-full" size="lg" disabled={!paymentMethod || loading || ((paymentMethod === 'CASH' || paymentMethod === 'SPLIT') && totalTendered < total)} onClick={handleCompleteSale}>
-            {loading ? 'Processing...' : 'Complete Sale'}
+            {loading ? t('pos.processing') : t('pos.completeSale')}
           </Button>
         </div>
       </Modal>
 
       {/* Success Modal */}
-      <Modal isOpen={!!lastOrder} onClose={() => setLastOrder(null)} title="Sale Complete">
+      <Modal isOpen={!!lastOrder} onClose={() => setLastOrder(null)} title={t('pos.orderComplete')}>
         {lastOrder && (
           <div className="text-center space-y-4">
             <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto"><ShoppingCart className="h-8 w-8 text-green-600" /></div>
             <div>
-              <p className="text-lg font-semibold text-gray-900">Order #{lastOrder.orderNumber}</p>
+              <p className="text-lg font-semibold text-gray-900">{t('pos.invoice')} #{lastOrder.orderNumber}</p>
               <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(lastOrder.total)}</p>
               <p className="text-sm text-gray-400">{toKHR(lastOrder.total, shopInfo.exchangeRate)}</p>
             </div>
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => printInvoice()} className="flex-1">
-                <Printer className="h-4 w-4 mr-1.5" /> Print Invoice
+                <Printer className="h-4 w-4 mr-1.5" /> {t('pos.printInvoice')}
               </Button>
               <Button variant="outline" onClick={() => setLastOrder(null)} className="flex-1">
-                New Order
+                {t('pos.newOrder')}
               </Button>
             </div>
           </div>
@@ -867,16 +876,15 @@ export default function POSPage() {
         const rate = shopInfo.exchangeRate
         const items = order.items || []
         const now = new Date(order.createdAt || Date.now())
-        const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-        const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-        const payLabel: Record<string, string> = { CASH: 'Cash', QR_EWALLET: 'Bank Transfer', SPLIT: 'Cash + Bank' }
+        const dateStr = now.toLocaleDateString(lang === 'km' ? 'km-KH' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        const timeStr = now.toLocaleTimeString(lang === 'km' ? 'km-KH' : 'en-US', { hour: '2-digit', minute: '2-digit' })
 
         return (
           <div className="fixed inset-0 z-[100] bg-gray-900/60 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[calc(100vh-2rem)] flex flex-col">
               {/* Header bar */}
               <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 shrink-0">
-                <h2 className="text-base font-bold text-gray-900">Invoice Preview</h2>
+                <h2 className={cn('text-base font-bold text-gray-900', lang === 'km' && 'font-khmer')}>{t('pos.invoicePreview')}</h2>
                 <button onClick={() => setShowInvoice(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
               </div>
 
@@ -885,15 +893,15 @@ export default function POSPage() {
                 <div ref={invoiceRef}>
                   {/* Shop header */}
                   <div className="text-center pb-3">
-                    <h3 className="text-lg font-extrabold text-gray-900">{shopInfo.name || 'Shop'}</h3>
+                    <h3 className="text-lg font-extrabold text-gray-900">{shopInfo.name || t('pos.shop')}</h3>
                     {shopInfo.address && <p className="text-xs text-gray-500">{shopInfo.address}</p>}
-                    {shopInfo.phone && <p className="text-xs text-gray-500">Tel: {shopInfo.phone}</p>}
+                    {shopInfo.phone && <p className="text-xs text-gray-500">{t('pos.tel')}: {shopInfo.phone}</p>}
                   </div>
                   <hr className="border-dashed border-gray-300 my-2" />
 
                   {/* Meta */}
                   <div className="flex justify-between text-xs text-gray-500 py-1">
-                    <span className="font-semibold text-gray-700">Invoice #{order.orderNumber}</span>
+                    <span className="font-semibold text-gray-700">{t('pos.invoice')} #{order.orderNumber}</span>
                     <span>{dateStr} {timeStr}</span>
                   </div>
                   <hr className="border-dashed border-gray-300 my-2" />
@@ -913,8 +921,8 @@ export default function POSPage() {
                           </div>
                           {(item.sizeName || item.sugarLevel) && (
                             <div className="flex gap-3 mt-0.5">
-                              {item.sizeName && <span className="text-[10px] text-gray-500">Size: {item.sizeName}</span>}
-                              {item.sugarLevel && <span className="text-[10px] text-gray-500">Sugar: {item.sugarLevel}</span>}
+                              {item.sizeName && <span className="text-[10px] text-gray-500">{t('pos.size')}: {item.sizeName}</span>}
+                              {item.sugarLevel && <span className="text-[10px] text-gray-500">{t('pos.sugar')}: {item.sugarLevel}</span>}
                             </div>
                           )}
                           {hasDisc && <p className="text-[10px] text-gray-400 line-through">{item.quantity} x ${item.originalPrice.toFixed(2)}</p>}
@@ -928,15 +936,15 @@ export default function POSPage() {
                   {/* Summary */}
                   {order.discountValue > 0 && (
                     <>
-                      <div className="flex justify-between text-xs py-0.5"><span>Subtotal</span><span>${order.subtotal.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-xs py-0.5"><span>{t('pos.subtotal')}</span><span>${order.subtotal.toFixed(2)}</span></div>
                       <div className="flex justify-between text-xs text-green-600 py-0.5">
-                        <span>{order.discountReason || 'Discount'}</span>
+                        <span>{order.discountReason || t('pos.discount')}</span>
                         <span>-${(order.subtotal - order.total).toFixed(2)} <span className="text-gray-400">(-{Math.round((order.subtotal - order.total) * rate).toLocaleString()}៛)</span></span>
                       </div>
                     </>
                   )}
                   <div className="flex justify-between items-baseline pt-1 mt-1 border-t-2 border-gray-900">
-                    <span className="text-base font-extrabold">TOTAL</span>
+                    <span className="text-base font-extrabold">{t('pos.total').toUpperCase()}</span>
                     <div className="text-right">
                       <span className="text-lg font-extrabold">${order.total.toFixed(2)}</span>
                       <span className="text-xs text-gray-400 ml-1">{Math.round(order.total * rate).toLocaleString()}៛</span>
@@ -945,18 +953,18 @@ export default function POSPage() {
 
                   {/* Payment */}
                   <div className="bg-gray-50 rounded-lg p-3 mt-3 text-xs space-y-0.5">
-                    <div className="flex justify-between"><span className="text-gray-500">Payment</span><span className="font-semibold">{payLabel[order.paymentMethod] || order.paymentMethod}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">{t('pos.payment')}</span><span className="font-semibold">{payLabel[order.paymentMethod] || order.paymentMethod}</span></div>
                     {order.amountTendered && (
                       <>
-                        <div className="flex justify-between"><span className="text-gray-500">Tendered</span><span className="font-semibold">${order.amountTendered.toFixed(2)}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-500">Change</span><span className="font-semibold">${(order.changeAmount || 0).toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">{t('pos.tendered')}</span><span className="font-semibold">${order.amountTendered.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">{t('pos.change')}</span><span className="font-semibold">${(order.changeAmount || 0).toFixed(2)}</span></div>
                       </>
                     )}
                   </div>
                   <hr className="border-dashed border-gray-300 my-3" />
                   <div className="text-center text-[10px] text-gray-400">
-                    <p>Thank you for your visit!</p>
-                    <p className="mt-1">Powered by CaféOS</p>
+                    <p>{t('common.thankYou')}</p>
+                    <p className="mt-1">{t('common.poweredBy')}</p>
                   </div>
                 </div>
               </div>
@@ -964,10 +972,10 @@ export default function POSPage() {
               {/* Action buttons - fixed at bottom */}
               <div className="flex gap-3 px-5 py-4 border-t border-gray-100 shrink-0">
                 <Button className="flex-1" onClick={handlePrint}>
-                  <Printer className="h-4 w-4 mr-1.5" /> Print
+                  <Printer className="h-4 w-4 mr-1.5" /> {t('pos.print')}
                 </Button>
                 <Button variant="outline" className="flex-1" onClick={() => setShowInvoice(false)}>
-                  Close
+                  {t('common.close')}
                 </Button>
               </div>
             </div>

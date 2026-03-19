@@ -6,6 +6,7 @@ import { Header } from '@/components/layout/header'
 import { AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 
 interface ShopLayoutClientProps {
   children: React.ReactNode
@@ -24,6 +25,7 @@ interface ShopLayoutClientProps {
 
 export function ShopLayoutClient({ children, role, shopName, shopLogo, brandColor, packageName, quota }: ShopLayoutClientProps) {
   const [collapsed, setCollapsed] = useState(false)
+  const { t, lang } = useI18n()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -43,20 +45,19 @@ export function ShopLayoutClient({ children, role, shopName, shopLogo, brandColo
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-6 w-6 text-amber-500 flex-shrink-0 mt-0.5" />
               <div>
-                <h3 className="font-semibold text-amber-800">Sale quota reached</h3>
-                <p className="text-sm text-amber-700 mt-1">
-                  Your <strong>{packageName}</strong> plan has reached its monthly limit of{' '}
-                  <strong>{quota.limit?.toLocaleString()}</strong> sales. Features like POS are temporarily locked until the quota resets or you upgrade your plan.
+                <h3 className={cn('font-semibold text-amber-800', lang === 'km' && 'font-khmer')}>{t('layout.quotaReached')}</h3>
+                <p className={cn('text-sm text-amber-700 mt-1', lang === 'km' && 'font-khmer')}>
+                  <strong>{packageName}</strong> {t('layout.quotaReachedMsg').replace('{limit}', quota.limit?.toLocaleString() || '')}
                 </p>
                 <div className="flex gap-3 mt-3">
                   <Link
                     href="/billing"
                     className="inline-flex items-center rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 transition-colors"
                   >
-                    Upgrade Plan
+                    {t('billing.upgrade')}
                   </Link>
                   <span className="inline-flex items-center text-sm text-amber-600">
-                    Resets {new Date(quota.resetDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                    {t('layout.resets')} {new Date(quota.resetDate).toLocaleDateString(lang === 'km' ? 'km-KH' : 'en-US', { month: 'long', day: 'numeric' })}
                   </span>
                 </div>
               </div>

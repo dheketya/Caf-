@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { cn, formatCurrency, formatDate, toKHR } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 import { Plus, TrendingUp, TrendingDown, DollarSign, CalendarDays, Banknote, QrCode, ArrowLeftRight } from 'lucide-react'
 
 interface FinanceEntry {
@@ -23,13 +24,15 @@ interface FinanceEntry {
   createdBy: { name: string }
 }
 
-const PAYMENT_LABELS: Record<string, string> = {
-  CASH: 'Cash',
-  QR_EWALLET: 'Bank Transfer',
-  SPLIT: 'Cash + Bank',
-}
-
 export default function IncomePage() {
+  const { t, bilingual, lang } = useI18n()
+
+  const PAYMENT_LABELS: Record<string, string> = {
+    CASH: t('pos.cash'),
+    QR_EWALLET: t('pos.bank'),
+    SPLIT: t('pos.cashAndBank'),
+  }
+
   const [entries, setEntries] = useState<FinanceEntry[]>([])
   const [showModal, setShowModal] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -74,7 +77,7 @@ export default function IncomePage() {
     if (res.ok) {
       setEntries(await res.json())
     } else if (res.status === 403) {
-      setError('You do not have permission to access this feature.')
+      setError(t('income.noPermission'))
     }
   }
 
@@ -100,13 +103,18 @@ export default function IncomePage() {
   const totalIncome = entries.filter((e) => e.type === 'INCOME').reduce((s, e) => s + e.amount, 0)
   const totalExpense = entries.filter((e) => e.type === 'EXPENSE').reduce((s, e) => s + e.amount, 0)
 
+  const [titleMain, titleSub] = bilingual('income.title')
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
         <DollarSign className="h-12 w-12 text-gray-300" />
-        <h2 className="text-xl font-semibold text-gray-900">Income & Expense</h2>
+        <h2 className={cn('text-xl font-semibold text-gray-900', lang === 'km' && 'font-khmer')}>
+          {titleMain}
+          <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{titleSub}</span>
+        </h2>
         <p className="text-gray-500">{error}</p>
-        <Button onClick={() => window.location.href = '/billing'}>Upgrade Plan</Button>
+        <Button onClick={() => window.location.href = '/billing'}>{t('income.upgradePlan')}</Button>
       </div>
     )
   }
@@ -114,9 +122,12 @@ export default function IncomePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Income & Expense</h1>
+        <h1 className={cn('text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>
+          {titleMain}
+          <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{titleSub}</span>
+        </h1>
         <Button onClick={() => setShowModal(true)}>
-          <Plus className="h-4 w-4 mr-1" /> Add Entry
+          <Plus className="h-4 w-4 mr-1" /> {t('income.addEntry')}
         </Button>
       </div>
 
@@ -127,7 +138,7 @@ export default function IncomePage() {
               <TrendingUp className="h-6 w-6 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Income</p>
+              <p className="text-sm text-gray-500">{t('income.totalIncomeSummary')}</p>
               <p className="text-xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
               <p className="text-xs text-gray-400">{toKHR(totalIncome, exchangeRate)}</p>
             </div>
@@ -139,7 +150,7 @@ export default function IncomePage() {
               <TrendingDown className="h-6 w-6 text-red-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Expenses</p>
+              <p className="text-sm text-gray-500">{t('income.totalExpenseSummary')}</p>
               <p className="text-xl font-bold text-red-600">{formatCurrency(totalExpense)}</p>
               <p className="text-xs text-gray-400">{toKHR(totalExpense, exchangeRate)}</p>
             </div>
@@ -151,7 +162,7 @@ export default function IncomePage() {
               <DollarSign className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Net Profit/Loss</p>
+              <p className="text-sm text-gray-500">{t('income.netProfitLoss')}</p>
               <p className={`text-xl font-bold ${totalIncome - totalExpense >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {formatCurrency(totalIncome - totalExpense)}
               </p>
@@ -166,10 +177,10 @@ export default function IncomePage() {
         {/* Period */}
         <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-1">
           <button onClick={() => setPeriod('all')} className={cn('px-3 py-1.5 rounded-md text-sm font-medium transition-colors', period === 'all' ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50')}>
-            All Time
+            {t('income.allTime')}
           </button>
           <button onClick={() => setPeriod('month')} className={cn('px-3 py-1.5 rounded-md text-sm font-medium transition-colors', period === 'month' ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50')}>
-            Monthly
+            {t('income.month')}
           </button>
         </div>
 
@@ -195,12 +206,12 @@ export default function IncomePage() {
         {/* Type filter */}
         <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-1">
           {[
-            { value: '', label: 'All' },
-            { value: 'INCOME', label: 'Income', color: 'text-green-600' },
-            { value: 'EXPENSE', label: 'Expense', color: 'text-red-600' },
-          ].map((t) => (
-            <button key={t.value} onClick={() => setFilterType(t.value)} className={cn('px-3 py-1.5 rounded-md text-sm font-medium transition-colors', filterType === t.value ? 'bg-gray-900 text-white' : `${t.color || 'text-gray-600'} hover:bg-gray-50`)}>
-              {t.label}
+            { value: '', label: t('income.all') },
+            { value: 'INCOME', label: t('income.income'), color: 'text-green-600' },
+            { value: 'EXPENSE', label: t('income.expense'), color: 'text-red-600' },
+          ].map((ft) => (
+            <button key={ft.value} onClick={() => setFilterType(ft.value)} className={cn('px-3 py-1.5 rounded-md text-sm font-medium transition-colors', filterType === ft.value ? 'bg-gray-900 text-white' : `${ft.color || 'text-gray-600'} hover:bg-gray-50`)}>
+              {ft.label}
             </button>
           ))}
         </div>
@@ -208,10 +219,10 @@ export default function IncomePage() {
         {/* Payment filter */}
         <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-1">
           {[
-            { value: '', label: 'All Pay' },
-            { value: 'CASH', label: 'Cash', icon: <Banknote className="h-3.5 w-3.5" /> },
-            { value: 'QR_EWALLET', label: 'Bank', icon: <QrCode className="h-3.5 w-3.5" /> },
-            { value: 'SPLIT', label: 'Mixed', icon: <ArrowLeftRight className="h-3.5 w-3.5" /> },
+            { value: '', label: t('income.allPay'), icon: undefined },
+            { value: 'CASH', label: t('pos.cash'), icon: <Banknote className="h-3.5 w-3.5" /> },
+            { value: 'QR_EWALLET', label: t('pos.bank'), icon: <QrCode className="h-3.5 w-3.5" /> },
+            { value: 'SPLIT', label: t('income.mixed'), icon: <ArrowLeftRight className="h-3.5 w-3.5" /> },
           ].map((opt) => (
             <button key={opt.value} onClick={() => setFilterPayment(opt.value)} className={cn('flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm font-medium transition-colors', filterPayment === opt.value ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50')}>
               {opt.icon}{opt.label}
@@ -224,13 +235,13 @@ export default function IncomePage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200">
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Date</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Type</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Category</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Payment</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Note</th>
-              <th className="text-right py-3 px-4 font-medium text-gray-500">Amount</th>
-              <th className="text-right py-3 px-4 font-medium text-gray-500">Status</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">{t('income.date')}</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">{t('income.type')}</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">{t('income.category')}</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">{t('income.paymentMethod')}</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">{t('income.note')}</th>
+              <th className="text-right py-3 px-4 font-medium text-gray-500">{t('income.amount')}</th>
+              <th className="text-right py-3 px-4 font-medium text-gray-500">{t('common.status')}</th>
             </tr>
           </thead>
           <tbody>
@@ -239,7 +250,7 @@ export default function IncomePage() {
                 <td className="py-3 px-4 text-gray-600">{formatDate(entry.date)}</td>
                 <td className="py-3 px-4">
                   <Badge variant={entry.type === 'INCOME' ? 'success' : 'danger'}>
-                    {entry.type}
+                    {entry.type === 'INCOME' ? t('income.income') : t('income.expense')}
                   </Badge>
                 </td>
                 <td className="py-3 px-4 text-gray-600">{entry.expenseCategory || entry.category || '—'}</td>
@@ -264,47 +275,47 @@ export default function IncomePage() {
         </table>
       </div>
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Add Entry">
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={t('income.addEntry')}>
         <form onSubmit={handleSave} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('income.type')}</label>
             <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as any })} className="flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">
-              <option value="INCOME">Income</option>
-              <option value="EXPENSE">Expense</option>
+              <option value="INCOME">{t('income.income')}</option>
+              <option value="EXPENSE">{t('income.expense')}</option>
             </select>
           </div>
-          <Input label="Amount" type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
-          <Input label="Date" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
+          <Input label={t('income.amount')} type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
+          <Input label={t('income.date')} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
           {form.type === 'EXPENSE' && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('income.category')}</label>
                 <select value={form.expenseCategory} onChange={(e) => setForm({ ...form, expenseCategory: e.target.value })} className="flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">
-                  <option value="">Select category</option>
-                  <option value="INGREDIENTS">Ingredients</option>
-                  <option value="RENT">Rent</option>
-                  <option value="UTILITIES">Utilities</option>
-                  <option value="SALARIES">Salaries</option>
-                  <option value="OTHER">Other</option>
+                  <option value="">{t('income.category')}</option>
+                  <option value="INGREDIENTS">{t('income.ingredients')}</option>
+                  <option value="RENT">{t('income.rent')}</option>
+                  <option value="UTILITIES">{t('income.utilities')}</option>
+                  <option value="SALARIES">{t('income.salaries')}</option>
+                  <option value="OTHER">{t('income.otherCategory')}</option>
                 </select>
               </div>
-              <Input label="Vendor" value={form.vendorName} onChange={(e) => setForm({ ...form, vendorName: e.target.value })} />
+              <Input label={t('income.vendor')} value={form.vendorName} onChange={(e) => setForm({ ...form, vendorName: e.target.value })} />
             </>
           )}
           {form.type === 'INCOME' && (
-            <Input label="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="e.g. Catering, Events" />
+            <Input label={t('income.category')} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="e.g. Catering, Events" />
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('income.paymentMethod')}</label>
             <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} className="flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">
-              <option value="">Not specified</option>
-              <option value="CASH">Cash</option>
-              <option value="QR_EWALLET">Bank Transfer</option>
-              <option value="SPLIT">Cash + Bank Transfer</option>
+              <option value="">{t('income.notSpecified')}</option>
+              <option value="CASH">{t('pos.cash')}</option>
+              <option value="QR_EWALLET">{t('pos.bank')}</option>
+              <option value="SPLIT">{t('pos.cashAndBank')}</option>
             </select>
           </div>
-          <Input label="Note" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
-          <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
+          <Input label={t('income.note')} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+          <Button type="submit" className="w-full" disabled={loading}>{loading ? t('common.loading') : t('common.save')}</Button>
         </form>
       </Modal>
     </div>

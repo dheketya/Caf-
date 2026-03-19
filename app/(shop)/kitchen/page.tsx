@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { UtensilsCrossed, CheckCircle } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 
 interface KitchenOrder {
   id: string
@@ -22,6 +23,7 @@ interface KitchenOrder {
 }
 
 export default function KitchenPage() {
+  const { t, bilingual, lang } = useI18n()
   const [orders, setOrders] = useState<KitchenOrder[]>([])
 
   useEffect(() => {
@@ -42,20 +44,24 @@ export default function KitchenPage() {
     loadOrders()
   }
 
+  const [titleMain, titleSub] = bilingual('kitchen.title')
+
   return (
     <div className="min-h-screen bg-gray-900 p-6">
       <div className="flex items-center gap-3 mb-6">
         <UtensilsCrossed className="h-8 w-8 text-brand-400" />
-        <h1 className="text-2xl font-bold text-white">Kitchen Display</h1>
+        <h1 className={cn('text-2xl font-bold text-white', lang === 'km' && 'font-khmer')}>{titleMain}
+          <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{titleSub}</span>
+        </h1>
         <Badge className="ml-auto bg-brand-600 text-white text-lg px-4">
-          {orders.length} active
+          {orders.length} {t('kitchen.active')}
         </Badge>
       </div>
 
       {orders.length === 0 ? (
         <div className="text-center py-20">
           <UtensilsCrossed className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400 text-lg">No active orders</p>
+          <p className="text-gray-400 text-lg">{t('kitchen.noOrders')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -92,7 +98,7 @@ export default function KitchenPage() {
                 className="w-full bg-green-600 hover:bg-green-700"
                 onClick={() => markReady(order.id)}
               >
-                <CheckCircle className="h-4 w-4 mr-1" /> Mark Ready
+                <CheckCircle className="h-4 w-4 mr-1" /> {t('kitchen.markReady')}
               </Button>
             </div>
           ))}

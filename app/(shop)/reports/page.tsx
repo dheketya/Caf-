@@ -4,12 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn, formatCurrency, toKHR } from '@/lib/utils'
 import { BarChart3, ShoppingCart, Package, Banknote, QrCode, ArrowLeftRight, CalendarDays } from 'lucide-react'
-
-const PAYMENT_LABELS: Record<string, string> = {
-  CASH: 'Cash',
-  QR_EWALLET: 'Bank Transfer',
-  SPLIT: 'Cash + Bank',
-}
+import { useI18n } from '@/lib/i18n'
 
 interface PaymentBreakdown {
   method: string
@@ -46,6 +41,7 @@ function getMonthOptions() {
 }
 
 export default function ReportsPage() {
+  const { t, bilingual, lang } = useI18n()
   const [report, setReport] = useState<SalesReport | null>(null)
   const [loading, setLoading] = useState(true)
   const [exchangeRate, setExchangeRate] = useState(4100)
@@ -59,6 +55,12 @@ export default function ReportsPage() {
   const [filterPayment, setFilterPayment] = useState<string>('')
 
   const monthOptions = getMonthOptions()
+
+  const PAYMENT_LABELS: Record<string, string> = {
+    CASH: t('pos.cash'),
+    QR_EWALLET: t('pos.bank'),
+    SPLIT: t('pos.cashAndBank'),
+  }
 
   useEffect(() => {
     fetch('/api/shops/me').then((r) => r.json()).then((shop) => {
@@ -116,7 +118,7 @@ export default function ReportsPage() {
           if (order.discountValue && order.subtotal > order.total) {
             const saved = order.subtotal - order.total
             totalDiscount += saved
-            const type = order.discountReason || 'Manual Discount'
+            const type = order.discountReason || t('reports.manualDiscount')
             const existing = discountMap.get(type) || { count: 0, totalSaved: 0 }
             existing.count++
             existing.totalSaved += saved
@@ -147,15 +149,19 @@ export default function ReportsPage() {
   }, [period, selectedMonth, filterPayment])
 
   const periodLabel = period === 'today'
-    ? "Today's"
+    ? t('reports.today')
     : monthOptions.find((m) => m.value === selectedMonth)?.label || selectedMonth
+
+  const [titleMain, titleSub] = bilingual('reports.title')
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-          <p className="text-sm text-gray-500">{periodLabel} summary</p>
+          <h1 className={cn('text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>{titleMain}
+            <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{titleSub}</span>
+          </h1>
+          <p className="text-sm text-gray-500">{periodLabel} {t('reports.summary')}</p>
         </div>
       </div>
 
@@ -170,7 +176,7 @@ export default function ReportsPage() {
               period === 'today' ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50'
             )}
           >
-            Today
+            {t('reports.today')}
           </button>
           <button
             onClick={() => setPeriod('month')}
@@ -179,7 +185,7 @@ export default function ReportsPage() {
               period === 'month' ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50'
             )}
           >
-            Monthly
+            {t('reports.monthly')}
           </button>
         </div>
 
@@ -202,10 +208,10 @@ export default function ReportsPage() {
         {/* Payment filter */}
         <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-1">
           {[
-            { value: '', label: 'All' },
-            { value: 'CASH', label: 'Cash', icon: <Banknote className="h-3.5 w-3.5" /> },
-            { value: 'QR_EWALLET', label: 'Bank', icon: <QrCode className="h-3.5 w-3.5" /> },
-            { value: 'SPLIT', label: 'Mixed', icon: <ArrowLeftRight className="h-3.5 w-3.5" /> },
+            { value: '', label: t('pos.all') },
+            { value: 'CASH', label: t('pos.cash'), icon: <Banknote className="h-3.5 w-3.5" /> },
+            { value: 'QR_EWALLET', label: t('pos.bank'), icon: <QrCode className="h-3.5 w-3.5" /> },
+            { value: 'SPLIT', label: t('pos.cashAndBank'), icon: <ArrowLeftRight className="h-3.5 w-3.5" /> },
           ].map((opt) => (
             <button
               key={opt.value}
@@ -222,7 +228,7 @@ export default function ReportsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-20 text-gray-400">Loading reports...</div>
+        <div className="text-center py-20 text-gray-400">{t('common.loading')}</div>
       ) : (
         <>
           {/* Stats */}
@@ -233,7 +239,7 @@ export default function ReportsPage() {
                   <ShoppingCart className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Total Transactions</p>
+                  <p className="text-sm text-gray-500">{t('reports.totalTransactions')}</p>
                   <p className="text-2xl font-bold text-gray-900">{report?.totalSales || 0}</p>
                 </div>
               </CardContent>
@@ -244,7 +250,7 @@ export default function ReportsPage() {
                   <BarChart3 className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Total Revenue</p>
+                  <p className="text-sm text-gray-500">{t('reports.totalRevenue')}</p>
                   <p className="text-2xl font-bold text-gray-900">{formatCurrency(report?.totalRevenue || 0)}</p>
                   <p className="text-xs text-gray-400">{toKHR(report?.totalRevenue || 0, exchangeRate)}</p>
                 </div>
@@ -256,7 +262,7 @@ export default function ReportsPage() {
                   <Package className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Avg Order Value</p>
+                  <p className="text-sm text-gray-500">{t('reports.avgOrderValue')}</p>
                   <p className="text-2xl font-bold text-gray-900">{formatCurrency(report?.avgOrderValue || 0)}</p>
                   <p className="text-xs text-gray-400">{toKHR(report?.avgOrderValue || 0, exchangeRate)}</p>
                 </div>
@@ -267,11 +273,11 @@ export default function ReportsPage() {
           {/* Top Products */}
           <Card>
             <CardHeader>
-              <CardTitle>Top 5 Products</CardTitle>
+              <CardTitle>{t('reports.top5Products')}</CardTitle>
             </CardHeader>
             <CardContent>
               {report?.topProducts.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-4">No sales in this period</p>
+                <p className="text-sm text-gray-400 text-center py-4">{t('reports.noSales')}</p>
               ) : (
                 <div className="space-y-3">
                   {report?.topProducts.map((product, i) => (
@@ -281,7 +287,7 @@ export default function ReportsPage() {
                         <span className="text-sm font-medium text-gray-900">{product.name}</span>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className="text-sm text-gray-500">{product.count} sold</span>
+                        <span className="text-sm text-gray-500">{product.count} {t('reports.sold')}</span>
                         <div className="text-right">
                           <span className="text-sm font-medium text-gray-900">{formatCurrency(product.revenue)}</span>
                           <p className="text-[11px] text-gray-400">{toKHR(product.revenue, exchangeRate)}</p>
@@ -298,11 +304,11 @@ export default function ReportsPage() {
           {!filterPayment && (
             <Card>
               <CardHeader>
-                <CardTitle>Payment Methods</CardTitle>
+                <CardTitle>{t('reports.paymentMethods')}</CardTitle>
               </CardHeader>
               <CardContent>
                 {report?.paymentBreakdown.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-4">No sales in this period</p>
+                  <p className="text-sm text-gray-400 text-center py-4">{t('reports.noSales')}</p>
                 ) : (
                   <div className="space-y-3">
                     {report?.paymentBreakdown.map((pm) => {
@@ -320,7 +326,7 @@ export default function ReportsPage() {
                               <span className="text-sm font-medium text-gray-900">
                                 {PAYMENT_LABELS[pm.method] || pm.method}
                               </span>
-                              <span className="text-xs text-gray-400">{pm.count} orders</span>
+                              <span className="text-xs text-gray-400">{pm.count} {t('reports.order')}{pm.count !== 1 ? 's' : ''}</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="text-right">
@@ -347,7 +353,7 @@ export default function ReportsPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>Discounts Given</CardTitle>
+                  <CardTitle>{t('reports.discountGiven')}</CardTitle>
                   <div className="text-right">
                     <p className="text-sm font-bold text-red-600">-{formatCurrency(report.totalDiscount)}</p>
                     <p className="text-[10px] text-gray-400">-{toKHR(report.totalDiscount, exchangeRate)}</p>
@@ -361,8 +367,10 @@ export default function ReportsPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm">{d.type === 'Loyalty Reward' ? '🎉' : '🏷️'}</span>
                         <div>
-                          <span className="text-sm font-medium text-gray-900">{d.type}</span>
-                          <p className="text-xs text-gray-400">{d.count} order{d.count !== 1 ? 's' : ''}</p>
+                          <span className="text-sm font-medium text-gray-900">
+                            {d.type === 'Loyalty Reward' ? t('reports.loyaltyReward') : d.type === 'Manual Discount' ? t('reports.manualDiscount') : d.type}
+                          </span>
+                          <p className="text-xs text-gray-400">{d.count} {t('reports.order')}{d.count !== 1 ? 's' : ''}</p>
                         </div>
                       </div>
                       <div className="text-right">

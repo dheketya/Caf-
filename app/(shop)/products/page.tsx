@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, cn } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 import { Plus, Search, Package, Trash2, Edit2 } from 'lucide-react'
 
 interface Product {
@@ -43,6 +44,7 @@ const DEFAULT_SIZES: SizeEntry[] = [
 ]
 
 export default function ProductsPage() {
+  const { t, bilingual, lang } = useI18n()
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [search, setSearch] = useState('')
@@ -194,19 +196,24 @@ export default function ProductsPage() {
     p.name.toLowerCase().includes(search.toLowerCase())
   )
 
+  const [titleMain, titleSub] = bilingual('products.title')
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Products</h1>
-          <p className="text-sm text-gray-500">{products.length} products</p>
+          <h1 className={cn('text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>
+            {titleMain}
+            <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{titleSub}</span>
+          </h1>
+          <p className="text-sm text-gray-500">{products.length} {t('products.count')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowCategoryModal(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Category
+            <Plus className="h-4 w-4 mr-1" /> {t('products.addCategory')}
           </Button>
           <Button onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-1" /> Product
+            <Plus className="h-4 w-4 mr-1" /> {t('products.add')}
           </Button>
         </div>
       </div>
@@ -224,7 +231,7 @@ export default function ProductsPage() {
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-        <Input placeholder="Search products..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+        <Input placeholder={t('products.search')} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -244,7 +251,7 @@ export default function ProductsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium text-gray-900 truncate">{product.name}</h3>
-                      {product.isOutOfStock && <Badge variant="warning">Out of stock</Badge>}
+                      {product.isOutOfStock && <Badge variant="warning">{t('products.outOfStock')}</Badge>}
                     </div>
                     {product.category && (
                       <p className="text-xs text-gray-500">{product.category.name}</p>
@@ -261,8 +268,8 @@ export default function ProductsPage() {
                       <p className="text-sm font-semibold text-brand-600 mt-1">{formatCurrency(product.price)}</p>
                     )}
                     <div className="flex gap-1.5 mt-1">
-                      {product.hasSugarLevel && <Badge variant="info" className="text-[10px]">Sugar</Badge>}
-                      {availableSizes.length > 0 && <Badge variant="default" className="text-[10px]">Sizes</Badge>}
+                      {product.hasSugarLevel && <Badge variant="info" className="text-[10px]">{t('products.hasSugar')}</Badge>}
+                      {availableSizes.length > 0 && <Badge variant="default" className="text-[10px]">{t('products.hasSize')}</Badge>}
                       {product.discountType && (
                         <Badge variant="success" className="text-[10px]">
                           {product.discountType === 'percentage' ? `${product.discountValue}% off` : `$${product.discountValue} off`}
@@ -275,14 +282,14 @@ export default function ProductsPage() {
                     <button
                       onClick={() => openEdit(product)}
                       className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
-                      title="Edit"
+                      title={t('products.edit')}
                     >
                       <Edit2 className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => setShowDeleteConfirm(product)}
                       className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                      title="Delete"
+                      title={t('products.deleteProduct')}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -295,20 +302,20 @@ export default function ProductsPage() {
       </div>
 
       {/* Create / Edit Product Modal */}
-      <Modal isOpen={showProductModal} onClose={() => setShowProductModal(false)} title={editingId ? 'Edit Product' : 'Add Product'} className="max-w-lg">
+      <Modal isOpen={showProductModal} onClose={() => setShowProductModal(false)} title={editingId ? t('products.edit') : t('products.add')} className="max-w-lg">
         <form onSubmit={handleSaveProduct} className="space-y-4">
-          <Input label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-          <Input label="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          <Input label={t('products.name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+          <Input label={t('income.description')} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
 
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Base Price ($)" type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
-            <Input label="SKU (optional)" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
+            <Input label={t('products.basePrice')} type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
+            <Input label={t('products.sku')} value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('products.category')}</label>
             <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className="flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">
-              <option value="">No category</option>
+              <option value="">{t('products.noCategory')}</option>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
@@ -316,8 +323,8 @@ export default function ProductsPage() {
           <label className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer">
             <input type="checkbox" checked={form.hasSugarLevel} onChange={(e) => setForm({ ...form, hasSugarLevel: e.target.checked })} className="rounded border-gray-300 h-4 w-4" />
             <div>
-              <p className="text-sm font-medium text-gray-900">Has Sugar Level</p>
-              <p className="text-xs text-gray-400">Customer can choose sugar level (set in Settings)</p>
+              <p className="text-sm font-medium text-gray-900">{t('products.hasSugar')}</p>
+              <p className="text-xs text-gray-400">{t('products.sugarDesc')}</p>
             </div>
           </label>
 
@@ -325,22 +332,22 @@ export default function ProductsPage() {
             <label className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer">
               <input type="checkbox" checked={form.hasSize} onChange={(e) => setForm({ ...form, hasSize: e.target.checked })} className="rounded border-gray-300 h-4 w-4" />
               <div>
-                <p className="text-sm font-medium text-gray-900">Has Size</p>
-                <p className="text-xs text-gray-400">Define sizes with prices. Leave price empty if not available.</p>
+                <p className="text-sm font-medium text-gray-900">{t('products.hasSize')}</p>
+                <p className="text-xs text-gray-400">{t('products.sizeDesc')}</p>
               </div>
             </label>
 
             {form.hasSize && (
               <div className="border-t border-gray-100 px-4 py-3 space-y-2 bg-gray-50">
                 <div className="flex items-center gap-2 text-xs text-gray-500 font-medium px-1">
-                  <span className="flex-1">Size Name</span>
-                  <span className="w-28">Price ($)</span>
+                  <span className="flex-1">{t('products.sizeName')}</span>
+                  <span className="w-28">{t('products.priceDollar')}</span>
                   <span className="w-8" />
                 </div>
                 {form.sizes.map((size, idx) => (
                   <div key={idx} className="flex items-center gap-2">
                     <Input value={size.name} onChange={(e) => updateSize(idx, 'name', e.target.value)} placeholder="e.g. S, M, L" className="flex-1" />
-                    <Input type="number" step="0.01" value={size.price} onChange={(e) => updateSize(idx, 'price', e.target.value)} placeholder="Not available" className="w-28" />
+                    <Input type="number" step="0.01" value={size.price} onChange={(e) => updateSize(idx, 'price', e.target.value)} placeholder={t('products.notAvailable')} className="w-28" />
                     {form.sizes.length > 1 && (
                       <button type="button" onClick={() => removeSizeRow(idx)} className="text-gray-400 hover:text-red-500 w-8 flex justify-center">
                         <Trash2 className="h-4 w-4" />
@@ -348,7 +355,7 @@ export default function ProductsPage() {
                     )}
                   </div>
                 ))}
-                <button type="button" onClick={addSizeRow} className="text-xs text-brand-600 hover:text-brand-700 font-medium">+ Add size</button>
+                <button type="button" onClick={addSizeRow} className="text-xs text-brand-600 hover:text-brand-700 font-medium">{t('products.addSize')}</button>
               </div>
             )}
           </div>
@@ -358,18 +365,18 @@ export default function ProductsPage() {
             <label className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer">
               <input type="checkbox" checked={form.hasDiscount} onChange={(e) => setForm({ ...form, hasDiscount: e.target.checked })} className="rounded border-gray-300 h-4 w-4" />
               <div>
-                <p className="text-sm font-medium text-gray-900">Product Discount</p>
-                <p className="text-xs text-gray-400">Apply a special discount to this product</p>
+                <p className="text-sm font-medium text-gray-900">{t('products.productDiscount')}</p>
+                <p className="text-xs text-gray-400">{t('products.discountDesc')}</p>
               </div>
             </label>
             {form.hasDiscount && (
               <div className="border-t border-gray-100 px-4 py-3 space-y-3 bg-gray-50">
                 <div className="flex gap-2">
                   <button type="button" onClick={() => setForm({ ...form, discountType: 'percentage' })} className={`px-3 py-1.5 rounded-lg border-2 text-xs font-medium ${form.discountType === 'percentage' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-600'}`}>
-                    Percentage (%)
+                    {t('products.percentage')}
                   </button>
                   <button type="button" onClick={() => setForm({ ...form, discountType: 'fixed' })} className={`px-3 py-1.5 rounded-lg border-2 text-xs font-medium ${form.discountType === 'fixed' ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-600'}`}>
-                    Fixed ($)
+                    {t('products.fixed')}
                   </button>
                 </div>
                 <Input
@@ -393,27 +400,27 @@ export default function ProductsPage() {
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Saving...' : editingId ? 'Update Product' : 'Save Product'}
+            {loading ? t('products.saving') : editingId ? t('products.updateProduct') : t('products.saveProduct')}
           </Button>
         </form>
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal isOpen={!!showDeleteConfirm} onClose={() => setShowDeleteConfirm(null)} title="Delete Product">
+      <Modal isOpen={!!showDeleteConfirm} onClose={() => setShowDeleteConfirm(null)} title={t('products.deleteProduct')}>
         {showDeleteConfirm && (
           <div className="space-y-4">
             <p className="text-sm text-gray-600">
-              Are you sure you want to delete <strong>{showDeleteConfirm.name}</strong>? This product will be removed from the POS and product list.
+              {t('products.deleteConfirmMsg')} <strong>{showDeleteConfirm.name}</strong>
             </p>
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setShowDeleteConfirm(null)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white"
                 onClick={handleDeleteProduct}
               >
-                Delete Product
+                {t('products.deleteProduct')}
               </Button>
             </div>
           </div>
@@ -421,14 +428,14 @@ export default function ProductsPage() {
       </Modal>
 
       {/* Add Category Modal */}
-      <Modal isOpen={showCategoryModal} onClose={() => setShowCategoryModal(false)} title="Add Category">
+      <Modal isOpen={showCategoryModal} onClose={() => setShowCategoryModal(false)} title={t('products.addCategory')}>
         <form onSubmit={handleSaveCategory} className="space-y-4">
-          <Input label="Name" value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} required />
+          <Input label={t('products.categoryName')} value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} required />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('products.categoryColor')}</label>
             <input type="color" value={categoryForm.color} onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })} className="h-10 w-20 rounded border border-gray-300 cursor-pointer" />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Saving...' : 'Save Category'}</Button>
+          <Button type="submit" className="w-full" disabled={loading}>{loading ? t('products.saving') : t('products.saveCategory')}</Button>
         </form>
       </Modal>
     </div>

@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { formatDate, formatCurrency, cn } from '@/lib/utils'
 import { Store, Ban, CheckCircle, Edit2, Clock, Check, X, KeyRound } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 
 interface ShopData {
   id: string
@@ -38,6 +39,7 @@ export default function AdminShopsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [resetLoading, setResetLoading] = useState(false)
   const [resetSuccess, setResetSuccess] = useState(false)
+  const { t, bilingual, lang } = useI18n()
 
   useEffect(() => { loadShops() }, [])
 
@@ -125,12 +127,16 @@ export default function AdminShopsPage() {
   }
 
   const pendingShops = shops.filter((s) => s.upgradeStatus === 'pending')
+  const [mainTitle, subTitle] = bilingual('adminShops.title')
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Shops</h1>
-        <p className="text-sm text-gray-500">{shops.length} registered shops</p>
+        <h1 className={cn('text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>
+          {mainTitle}
+          <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{subTitle}</span>
+        </h1>
+        <p className="text-sm text-gray-500">{shops.length} {t('adminShops.registeredShops')}</p>
       </div>
 
       {/* Pending Approvals */}
@@ -139,7 +145,7 @@ export default function AdminShopsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-amber-800">
               <Clock className="h-5 w-5" />
-              Pending Plan Approvals ({pendingShops.length})
+              {t('adminShops.pendingApprovals')} ({pendingShops.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -157,13 +163,13 @@ export default function AdminShopsPage() {
                         <span className="font-medium text-gray-900">{shop.name}</span>
                       </div>
                       <p className="text-sm text-gray-500 mt-1">
-                        Requesting <strong>{shop.requestedPackage?.name}</strong> plan
+                        {t('adminShops.requesting')} <strong>{shop.requestedPackage?.name}</strong>
                         {' '}({shop.requestedBillingCycle})
                         {price !== undefined && (
                           <> — {formatCurrency(price)}/{shop.requestedBillingCycle === 'annual' ? 'yr' : 'mo'}</>
                         )}
                       </p>
-                      <p className="text-xs text-gray-400 mt-0.5">Registered {formatDate(shop.createdAt)}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{t('adminShops.registered')} {formatDate(shop.createdAt)}</p>
                     </div>
                     <div className="flex gap-2">
                       <Button
@@ -171,7 +177,7 @@ export default function AdminShopsPage() {
                         onClick={() => requestApproval(shop, 'approve')}
                         disabled={approving === shop.id}
                       >
-                        <Check className="h-4 w-4 mr-1" /> Approve
+                        <Check className="h-4 w-4 mr-1" /> {t('adminShops.approve')}
                       </Button>
                       <Button
                         variant="outline"
@@ -180,7 +186,7 @@ export default function AdminShopsPage() {
                         disabled={approving === shop.id}
                         className="text-red-600 border-red-200 hover:bg-red-50"
                       >
-                        <X className="h-4 w-4 mr-1" /> Reject
+                        <X className="h-4 w-4 mr-1" /> {t('adminShops.reject')}
                       </Button>
                     </div>
                   </div>
@@ -195,14 +201,14 @@ export default function AdminShopsPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200">
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Shop</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Owner</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Plan</th>
-              <th className="text-right py-3 px-4 font-medium text-gray-500">Sales</th>
-              <th className="text-right py-3 px-4 font-medium text-gray-500">Users</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Status</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500">Created</th>
-              <th className="text-right py-3 px-4 font-medium text-gray-500">Actions</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">{t('adminShops.shop')}</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">{t('adminShops.owner')}</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">{t('adminShops.plan')}</th>
+              <th className="text-right py-3 px-4 font-medium text-gray-500">{t('adminShops.sales')}</th>
+              <th className="text-right py-3 px-4 font-medium text-gray-500">{t('adminShops.users')}</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">{t('common.status')}</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-500">{t('adminShops.created')}</th>
+              <th className="text-right py-3 px-4 font-medium text-gray-500">{t('common.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -228,7 +234,7 @@ export default function AdminShopsPage() {
                   <div className="flex items-center gap-1.5">
                     <Badge variant="info">{shop.package.name}</Badge>
                     {shop.upgradeStatus === 'pending' && (
-                      <Badge variant="warning">Upgrade pending</Badge>
+                      <Badge variant="warning">{t('adminShops.upgradePending')}</Badge>
                     )}
                   </div>
                 </td>
@@ -249,7 +255,7 @@ export default function AdminShopsPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => openResetPassword(shop)}
-                        title="Reset owner password"
+                        title={t('adminShops.resetPassword')}
                       >
                         <KeyRound className="h-4 w-4 text-amber-500" />
                       </Button>
@@ -262,7 +268,7 @@ export default function AdminShopsPage() {
                         setQuotaValue(shop.quotaOverride?.toString() || '')
                         setShowQuotaModal(true)
                       }}
-                      title="Edit quota"
+                      title={t('adminShops.editQuota')}
                     >
                       <Edit2 className="h-4 w-4" />
                     </Button>
@@ -270,7 +276,7 @@ export default function AdminShopsPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => toggleStatus(shop)}
-                      title={shop.status === 'ACTIVE' ? 'Suspend' : 'Reactivate'}
+                      title={shop.status === 'ACTIVE' ? t('adminShops.suspend') : t('adminShops.reactivate')}
                     >
                       {shop.status === 'ACTIVE' ? (
                         <Ban className="h-4 w-4 text-red-500" />
@@ -286,40 +292,40 @@ export default function AdminShopsPage() {
         </table>
       </div>
 
-      <Modal isOpen={showQuotaModal} onClose={() => setShowQuotaModal(false)} title={`Edit Quota: ${selectedShop?.name}`}>
+      <Modal isOpen={showQuotaModal} onClose={() => setShowQuotaModal(false)} title={`${t('adminShops.editQuotaTitle')}: ${selectedShop?.name}`}>
         <form onSubmit={setQuotaOverride} className="space-y-4">
-          <Input label="Quota Override (blank to use plan default)" type="number" value={quotaValue} onChange={(e) => setQuotaValue(e.target.value)} />
-          <Input label="Reason" value={quotaNote} onChange={(e) => setQuotaNote(e.target.value)} />
-          <Button type="submit" className="w-full">Save Override</Button>
+          <Input label={t('adminShops.quotaOverride')} type="number" value={quotaValue} onChange={(e) => setQuotaValue(e.target.value)} />
+          <Input label={t('adminShops.reason')} value={quotaNote} onChange={(e) => setQuotaNote(e.target.value)} />
+          <Button type="submit" className="w-full">{t('adminShops.saveOverride')}</Button>
         </form>
       </Modal>
 
-      <Modal isOpen={showResetModal} onClose={() => setShowResetModal(false)} title="Reset Owner Password">
+      <Modal isOpen={showResetModal} onClose={() => setShowResetModal(false)} title={t('adminShops.resetOwnerPassword')}>
         {resetUser && (
           <form onSubmit={handleResetPassword} className="space-y-4">
             <div className="rounded-lg bg-gray-50 p-3 space-y-1">
-              <p className="text-sm"><span className="text-gray-500">Shop:</span> <span className="font-medium text-gray-900">{resetUser.shopName}</span></p>
-              <p className="text-sm"><span className="text-gray-500">Owner:</span> <span className="font-medium text-gray-900">{resetUser.name}</span></p>
-              <p className="text-sm"><span className="text-gray-500">Email:</span> <span className="font-medium text-gray-900">{resetUser.email}</span></p>
+              <p className="text-sm"><span className="text-gray-500">{t('adminShops.shop')}:</span> <span className="font-medium text-gray-900">{resetUser.shopName}</span></p>
+              <p className="text-sm"><span className="text-gray-500">{t('adminShops.owner')}:</span> <span className="font-medium text-gray-900">{resetUser.name}</span></p>
+              <p className="text-sm"><span className="text-gray-500">{t('adminShops.email')}:</span> <span className="font-medium text-gray-900">{resetUser.email}</span></p>
             </div>
 
             <Input
-              label="New Password"
+              label={t('users.newPassword')}
               type="text"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Min 8 characters"
+              placeholder={t('adminShops.min8Chars')}
               minLength={8}
               required
             />
 
             {resetSuccess ? (
               <div className="rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-700 font-medium text-center">
-                Password reset successfully!
+                {t('users.passwordResetSuccess')}
               </div>
             ) : (
               <Button type="submit" className="w-full" disabled={resetLoading}>
-                {resetLoading ? 'Resetting...' : 'Reset Password'}
+                {resetLoading ? t('users.resetting') : t('adminShops.resetPassword')}
               </Button>
             )}
           </form>
@@ -327,27 +333,27 @@ export default function AdminShopsPage() {
       </Modal>
 
       {/* Approve/Reject Confirmation Modal */}
-      <Modal isOpen={!!confirmAction} onClose={() => setConfirmAction(null)} title={confirmAction?.action === 'approve' ? 'Confirm Approval' : 'Confirm Rejection'}>
+      <Modal isOpen={!!confirmAction} onClose={() => setConfirmAction(null)} title={confirmAction?.action === 'approve' ? t('adminShops.confirmApproval') : t('adminShops.confirmRejection')}>
         {confirmAction && (
           <div className="space-y-4">
             <p className="text-sm text-gray-600">
               {confirmAction.action === 'approve' ? (
-                <>Are you sure you want to <strong className="text-green-700">approve</strong> the upgrade to <strong>{confirmAction.planName}</strong> for <strong>{confirmAction.shopName}</strong>? The shop will be moved to the new plan immediately.</>
+                <>{t('adminShops.approveMsg')} <strong>{confirmAction.planName}</strong> — <strong>{confirmAction.shopName}</strong></>
               ) : (
-                <>Are you sure you want to <strong className="text-red-600">reject</strong> the upgrade to <strong>{confirmAction.planName}</strong> for <strong>{confirmAction.shopName}</strong>? The shop will remain on its current plan.</>
+                <>{t('adminShops.rejectMsg')} <strong>{confirmAction.planName}</strong> — <strong>{confirmAction.shopName}</strong></>
               )}
             </p>
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setConfirmAction(null)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               {confirmAction.action === 'approve' ? (
                 <Button className="flex-1" onClick={executeApproval} disabled={approving === confirmAction.shopId}>
-                  {approving ? 'Processing...' : 'Yes, Approve'}
+                  {approving ? t('pos.processing') : t('adminShops.yesApprove')}
                 </Button>
               ) : (
                 <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={executeApproval} disabled={approving === confirmAction.shopId}>
-                  {approving ? 'Processing...' : 'Yes, Reject'}
+                  {approving ? t('pos.processing') : t('adminShops.yesReject')}
                 </Button>
               )}
             </div>

@@ -19,32 +19,34 @@ import {
   UserCheck,
   PanelLeftClose,
   PanelLeftOpen,
+  Globe,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 
 interface NavItem {
-  label: string
+  labelKey: string
   href: string
   icon: React.ReactNode
   module?: string
 }
 
 const shopNavItems: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
-  { label: 'POS', href: '/pos', icon: <ShoppingCart className="h-5 w-5" />, module: 'pos' },
-  { label: 'Products', href: '/products', icon: <Package className="h-5 w-5" />, module: 'products' },
-  { label: 'Stock', href: '/stock', icon: <Warehouse className="h-5 w-5" />, module: 'stock' },
-  { label: 'Income & Expense', href: '/income', icon: <DollarSign className="h-5 w-5" />, module: 'income' },
-  { label: 'Customers', href: '/customers', icon: <UserCheck className="h-5 w-5" /> },
-  { label: 'Reports', href: '/reports', icon: <BarChart3 className="h-5 w-5" />, module: 'reports' },
-  { label: 'Users', href: '/users', icon: <Users className="h-5 w-5" />, module: 'users' },
-  { label: 'Billing', href: '/billing', icon: <CreditCard className="h-5 w-5" />, module: 'billing' },
-  { label: 'Chat', href: '/chat', icon: <MessageCircle className="h-5 w-5" />, module: 'chat' },
-  { label: 'Settings', href: '/settings', icon: <Settings className="h-5 w-5" />, module: 'settings' },
+  { labelKey: 'nav.dashboard', href: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
+  { labelKey: 'nav.pos', href: '/pos', icon: <ShoppingCart className="h-5 w-5" />, module: 'pos' },
+  { labelKey: 'nav.products', href: '/products', icon: <Package className="h-5 w-5" />, module: 'products' },
+  { labelKey: 'nav.stock', href: '/stock', icon: <Warehouse className="h-5 w-5" />, module: 'stock' },
+  { labelKey: 'nav.income', href: '/income', icon: <DollarSign className="h-5 w-5" />, module: 'income' },
+  { labelKey: 'nav.customers', href: '/customers', icon: <UserCheck className="h-5 w-5" /> },
+  { labelKey: 'nav.reports', href: '/reports', icon: <BarChart3 className="h-5 w-5" />, module: 'reports' },
+  { labelKey: 'nav.users', href: '/users', icon: <Users className="h-5 w-5" />, module: 'users' },
+  { labelKey: 'nav.billing', href: '/billing', icon: <CreditCard className="h-5 w-5" />, module: 'billing' },
+  { labelKey: 'nav.chat', href: '/chat', icon: <MessageCircle className="h-5 w-5" />, module: 'chat' },
+  { labelKey: 'nav.settings', href: '/settings', icon: <Settings className="h-5 w-5" />, module: 'settings' },
 ]
 
 const kitchenNavItems: NavItem[] = [
-  { label: 'Kitchen Display', href: '/kitchen', icon: <UtensilsCrossed className="h-5 w-5" /> },
+  { labelKey: 'nav.kitchen', href: '/kitchen', icon: <UtensilsCrossed className="h-5 w-5" /> },
 ]
 
 interface SidebarProps {
@@ -61,6 +63,7 @@ const BLOCKED_MODULES = ['pos']
 
 export function Sidebar({ role, shopName, shopLogo, brandColor, isQuotaBlocked, collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname()
+  const { lang, setLang, bilingual } = useI18n()
   const items = role === 'KITCHEN' ? kitchenNavItems : shopNavItems
 
   return (
@@ -88,16 +91,17 @@ export function Sidebar({ role, shopName, shopLogo, brandColor, isQuotaBlocked, 
             )}
             <div className="min-w-0 flex-1">
               {shopName && <h1 className="text-sm font-bold text-gray-900 truncate max-w-[130px]">{shopName}</h1>}
-              <p className="text-[10px] text-gray-400">Powered by CaféOS</p>
+              <p className="text-[10px] text-gray-400 font-khmer">CaféOS</p>
             </div>
           </>
         )}
       </div>
 
-      <nav className={cn('flex-1 py-3 space-y-1 overflow-y-auto', collapsed ? 'px-2' : 'px-3')}>
+      <nav className={cn('flex-1 py-3 space-y-0.5 overflow-y-auto', collapsed ? 'px-2' : 'px-3')}>
         {items.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
           const isLocked = isQuotaBlocked && item.module && BLOCKED_MODULES.includes(item.module)
+          const [main, sub] = bilingual(item.labelKey)
 
           if (isLocked) {
             return (
@@ -105,13 +109,18 @@ export function Sidebar({ role, shopName, shopLogo, brandColor, isQuotaBlocked, 
                 key={item.href}
                 className={cn(
                   'flex items-center rounded-lg text-sm font-medium text-gray-300 cursor-not-allowed',
-                  collapsed ? 'justify-center py-2.5' : 'gap-3 px-3 py-2.5'
+                  collapsed ? 'justify-center py-2.5' : 'gap-3 px-3 py-2'
                 )}
-                title={collapsed ? `${item.label} (locked)` : 'Quota exceeded — upgrade to unlock'}
+                title={collapsed ? `${main} (locked)` : 'Quota exceeded — upgrade to unlock'}
               >
-                <span className="text-gray-300">{item.icon}</span>
-                {!collapsed && item.label}
-                {!collapsed && <Lock className="h-3.5 w-3.5 ml-auto text-gray-300" />}
+                <span className="text-gray-300 shrink-0">{item.icon}</span>
+                {!collapsed && (
+                  <span className="min-w-0 flex-1">
+                    <span className={cn('block leading-tight', lang === 'km' && 'font-khmer')}>{main}</span>
+                    <span className={cn('block text-[9px] opacity-50 leading-tight', lang === 'km' ? '' : 'font-khmer')}>{sub}</span>
+                  </span>
+                )}
+                {!collapsed && <Lock className="h-3.5 w-3.5 ml-auto text-gray-300 shrink-0" />}
               </div>
             )
           }
@@ -120,25 +129,52 @@ export function Sidebar({ role, shopName, shopLogo, brandColor, isQuotaBlocked, 
             <Link
               key={item.href}
               href={item.href}
-              title={collapsed ? item.label : undefined}
+              title={collapsed ? main : undefined}
               className={cn(
                 'flex items-center rounded-lg text-sm font-medium transition-colors',
-                collapsed ? 'justify-center py-2.5' : 'gap-3 px-3 py-2.5',
+                collapsed ? 'justify-center py-2.5' : 'gap-3 px-3 py-2',
                 isActive
                   ? 'bg-brand-50 text-brand-700'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               )}
             >
-              <span className={cn(isActive ? 'text-brand-600' : 'text-gray-400')}>
+              <span className={cn('shrink-0', isActive ? 'text-brand-600' : 'text-gray-400')}>
                 {item.icon}
               </span>
-              {!collapsed && item.label}
+              {!collapsed && (
+                <span className="min-w-0 flex-1">
+                  <span className={cn('block leading-tight', lang === 'km' && 'font-khmer')}>{main}</span>
+                  <span className={cn('block text-[9px] leading-tight', isActive ? 'opacity-50' : 'opacity-40', lang === 'km' ? '' : 'font-khmer')}>{sub}</span>
+                </span>
+              )}
             </Link>
           )
         })}
       </nav>
 
-      {/* Toggle button */}
+      {/* Language toggle */}
+      <button
+        onClick={() => setLang(lang === 'en' ? 'km' : 'en')}
+        className={cn(
+          'flex items-center border-t border-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors',
+          collapsed ? 'justify-center py-3' : 'gap-3 px-5 py-2.5'
+        )}
+        title={lang === 'en' ? 'ប្តូរទៅភាសាខ្មែរ' : 'Switch to English'}
+      >
+        <Globe className="h-4 w-4 shrink-0" />
+        {!collapsed && (
+          <span className="text-xs">
+            <span className={cn('font-medium', lang === 'km' && 'font-khmer')}>
+              {lang === 'en' ? 'English' : 'ខ្មែរ'}
+            </span>
+            <span className={cn('ml-1.5 opacity-50', lang === 'en' ? 'font-khmer' : '')}>
+              {lang === 'en' ? 'ខ្មែរ' : 'English'}
+            </span>
+          </span>
+        )}
+      </button>
+
+      {/* Toggle collapse */}
       <button
         onClick={onToggle}
         className="flex items-center justify-center py-3 border-t border-gray-100 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"

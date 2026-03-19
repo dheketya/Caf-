@@ -10,6 +10,7 @@ import {
   CreditCard, Check, QrCode, Clock, ArrowUpRight, RefreshCw,
   Shield, Zap, Sparkles, ChevronRight,
 } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 
 interface PackageOption {
   id: string
@@ -38,6 +39,7 @@ interface BillingInfo {
 }
 
 export default function BillingPage() {
+  const { t, bilingual, lang } = useI18n()
   const [billing, setBilling] = useState<BillingInfo | null>(null)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
@@ -102,18 +104,22 @@ export default function BillingPage() {
   }
 
   if (!billing) {
-    return <div className="text-center py-20 text-gray-400">Loading...</div>
+    return <div className="text-center py-20 text-gray-400">{t('common.loading')}</div>
   }
 
   const selectedPkg = billing.packages.find((p) => p.id === selectedPkgId)
   const isFree = billing.monthlyPrice === 0
   const usagePercent = billing.saleLimit ? Math.min(100, Math.round((billing.saleCount / billing.saleLimit) * 100)) : 0
 
+  const [titleMain, titleSub] = bilingual('billing.title')
+
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Billing & Plan</h1>
-        <p className="text-sm text-gray-500">Manage your subscription and usage</p>
+        <h1 className={cn('text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>{titleMain}
+          <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{titleSub}</span>
+        </h1>
+        <p className="text-sm text-gray-500">{t('billing.manage')}</p>
       </div>
 
       {/* Pending upgrade banner */}
@@ -121,9 +127,9 @@ export default function BillingPage() {
         <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-start gap-3">
           <Clock className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-semibold text-amber-800">Upgrade pending approval</p>
+            <p className="text-sm font-semibold text-amber-800">{t('billing.pendingApproval')}</p>
             <p className="text-sm text-amber-700 mt-0.5">
-              Your request to upgrade to <strong>{billing.requestedPackage.name}</strong> ({billing.requestedBillingCycle}) is being reviewed by the platform owner.
+              <strong>{billing.requestedPackage.name}</strong> ({billing.requestedBillingCycle}) {t('billing.requestReview')}
             </p>
           </div>
         </div>
@@ -135,7 +141,7 @@ export default function BillingPage() {
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-brand-500" />
-              Current Plan
+              {t('billing.currentPlan')}
             </CardTitle>
             <div className="flex items-center gap-2">
               <Badge variant="info" className="text-sm px-3 py-1">{billing.plan}</Badge>
@@ -149,13 +155,13 @@ export default function BillingPage() {
           {/* Pricing */}
           <div className="flex items-baseline gap-1">
             {isFree ? (
-              <span className="text-3xl font-extrabold text-gray-900">Free</span>
+              <span className="text-3xl font-extrabold text-gray-900">{t('auth.free')}</span>
             ) : (
               <>
                 <span className="text-3xl font-extrabold text-gray-900">
                   {formatCurrency(billing.billingCycle === 'annual' ? billing.annualPrice : billing.monthlyPrice)}
                 </span>
-                <span className="text-sm text-gray-400">/{billing.billingCycle === 'annual' ? 'yr' : 'mo'}</span>
+                <span className="text-sm text-gray-400">{billing.billingCycle === 'annual' ? t('auth.yr') : t('auth.mo')}</span>
               </>
             )}
           </div>
@@ -163,7 +169,7 @@ export default function BillingPage() {
           {/* Usage */}
           <div>
             <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-gray-500">Monthly sales usage</span>
+              <span className="text-gray-500">{t('billing.monthlyUsage')}</span>
               <span className="font-medium text-gray-900">
                 {billing.saleCount.toLocaleString()} / {billing.saleLimit?.toLocaleString() ?? '∞'}
               </span>
@@ -185,12 +191,12 @@ export default function BillingPage() {
           <div className="flex gap-3 pt-2">
             <Button onClick={openUpgrade} disabled={billing.upgradeStatus === 'pending'}>
               <ArrowUpRight className="h-4 w-4 mr-1.5" />
-              {isFree ? 'Upgrade Plan' : 'Change Plan'}
+              {isFree ? t('billing.upgrade') : t('billing.changePlan')}
             </Button>
             {!isFree && (
               <Button variant="outline" onClick={openRenew} disabled={billing.upgradeStatus === 'pending'}>
                 <RefreshCw className="h-4 w-4 mr-1.5" />
-                Renew Plan
+                {t('billing.renew')}
               </Button>
             )}
           </div>
@@ -203,7 +209,7 @@ export default function BillingPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <QrCode className="h-5 w-5 text-blue-600" />
-              Payment via KHQR
+              {t('billing.paymentViaKHQR')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -213,13 +219,13 @@ export default function BillingPage() {
               </div>
               <div className="space-y-2">
                 <p className="text-sm text-gray-600">
-                  Scan this KHQR code to make payment for your plan upgrade or renewal.
+                  {t('billing.scanKHQRDesc')}
                 </p>
                 <div className="text-xs text-gray-400 space-y-1">
-                  <p>1. Scan the QR code with your banking app</p>
-                  <p>2. Transfer the plan amount</p>
-                  <p>3. Click Upgrade or Renew above</p>
-                  <p>4. Platform owner will verify and approve</p>
+                  <p>{t('billing.step1')}</p>
+                  <p>{t('billing.step2')}</p>
+                  <p>{t('billing.step3')}</p>
+                  <p>{t('billing.step4')}</p>
                 </div>
               </div>
             </div>
@@ -229,7 +235,7 @@ export default function BillingPage() {
 
       {/* Available Plans */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">Available Plans</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">{t('billing.availablePlans')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {billing.packages.map((pkg, i) => {
             const isCurrent = pkg.id === billing.packageId
@@ -255,19 +261,19 @@ export default function BillingPage() {
                   </div>
                   <span className="font-bold text-gray-900 text-sm">{pkg.name}</span>
                   {isCurrent && (
-                    <Badge variant="success" className="ml-auto text-[10px]">Current</Badge>
+                    <Badge variant="success" className="ml-auto text-[10px]">{t('auth.current')}</Badge>
                   )}
                 </div>
 
                 <div className="mb-2">
                   {pkg.monthlyPrice === 0 ? (
-                    <span className="text-xl font-extrabold text-gray-900">Free</span>
+                    <span className="text-xl font-extrabold text-gray-900">{t('auth.free')}</span>
                   ) : (
                     <div>
                       <span className="text-xl font-extrabold text-gray-900">{formatCurrency(pkg.monthlyPrice)}</span>
-                      <span className="text-xs text-gray-400">/mo</span>
+                      <span className="text-xs text-gray-400">{t('auth.mo')}</span>
                       {pkg.annualPrice > 0 && (
-                        <p className="text-[11px] text-gray-400">{formatCurrency(pkg.annualPrice)}/yr</p>
+                        <p className="text-[11px] text-gray-400">{formatCurrency(pkg.annualPrice)}{t('auth.yr')}</p>
                       )}
                     </div>
                   )}
@@ -277,7 +283,7 @@ export default function BillingPage() {
 
                 <div className="flex items-center gap-1.5 text-xs text-gray-600">
                   <Check className="h-3 w-3 text-green-500" />
-                  {pkg.saleLimit ? `${pkg.saleLimit.toLocaleString()} sales/mo` : 'Unlimited sales'}
+                  {pkg.saleLimit ? `${pkg.saleLimit.toLocaleString()} ${t('auth.salesMo')}` : t('auth.unlimitedSales')}
                 </div>
 
                 {!isCurrent && pkg.monthlyPrice > billing.monthlyPrice && (
@@ -292,7 +298,7 @@ export default function BillingPage() {
                     }}
                     disabled={billing.upgradeStatus === 'pending'}
                   >
-                    Upgrade <ChevronRight className="h-3 w-3 ml-1" />
+                    {t('billing.upgrade')} <ChevronRight className="h-3 w-3 ml-1" />
                   </Button>
                 )}
               </div>
@@ -305,7 +311,7 @@ export default function BillingPage() {
       <Modal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
-        title="Upgrade Plan"
+        title={t('billing.upgrade')}
         className="max-w-lg"
       >
         <div className="space-y-4">
@@ -335,7 +341,7 @@ export default function BillingPage() {
                       <p className="font-bold text-gray-900">
                         {selectedCycle === 'annual' ? formatCurrency(pkg.annualPrice) : formatCurrency(pkg.monthlyPrice)}
                       </p>
-                      <p className="text-xs text-gray-400">/{selectedCycle === 'annual' ? 'yr' : 'mo'}</p>
+                      <p className="text-xs text-gray-400">{selectedCycle === 'annual' ? t('auth.yr') : t('auth.mo')}</p>
                     </div>
                   </button>
                 )
@@ -351,7 +357,7 @@ export default function BillingPage() {
                 selectedCycle === 'monthly' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:text-gray-700'
               )}
             >
-              Monthly
+              {t('auth.monthly')}
             </button>
             <button
               onClick={() => setSelectedCycle('annual')}
@@ -360,7 +366,7 @@ export default function BillingPage() {
                 selectedCycle === 'annual' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:text-gray-700'
               )}
             >
-              Annual (save more)
+              {t('billing.annualSaveMore')}
             </button>
           </div>
 
@@ -370,7 +376,7 @@ export default function BillingPage() {
             onClick={submitUpgrade}
             disabled={!selectedPkgId || submitting}
           >
-            {submitting ? 'Submitting...' : `Upgrade to ${selectedPkg?.name || 'selected plan'}`}
+            {submitting ? t('common.loading') : `${t('billing.upgradeTo')} ${selectedPkg?.name || ''}`}
           </Button>
         </div>
       </Modal>
@@ -379,7 +385,7 @@ export default function BillingPage() {
       <Modal
         isOpen={showPaymentModal}
         onClose={() => { setShowPaymentModal(false); setSubmitted(false) }}
-        title="Complete Payment"
+        title={t('auth.completePayment')}
         className="max-w-md"
       >
         <div className="space-y-4">
@@ -388,9 +394,9 @@ export default function BillingPage() {
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-sm font-medium text-gray-900">
-                  {submitted && selectedPkg ? selectedPkg.name : billing.plan} plan
+                  {submitted && selectedPkg ? selectedPkg.name : billing.plan}
                 </p>
-                <p className="text-xs text-gray-400 mt-0.5 capitalize">{selectedCycle} billing</p>
+                <p className="text-xs text-gray-400 mt-0.5 capitalize">{selectedCycle}</p>
               </div>
               <p className="text-lg font-bold text-gray-900">
                 {formatCurrency(
@@ -408,7 +414,7 @@ export default function BillingPage() {
               <div className="p-3 bg-white rounded-2xl border-2 border-gray-100 shadow-sm">
                 <img
                   src={billing.khqrImage}
-                  alt="KHQR Payment Code"
+                  alt={t('auth.khqrPaymentCode')}
                   className="w-[220px] h-auto rounded-xl"
                 />
               </div>
@@ -416,7 +422,7 @@ export default function BillingPage() {
               <div className="w-[220px] h-[220px] rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center bg-gray-50">
                 <div className="text-center text-gray-400">
                   <QrCode className="h-10 w-10 mx-auto mb-2 opacity-40" />
-                  <p className="text-sm">KHQR not available</p>
+                  <p className="text-sm">{t('auth.khqrNotAvailable')}</p>
                 </div>
               </div>
             )}
@@ -427,20 +433,20 @@ export default function BillingPage() {
             <div className="flex items-start gap-2.5">
               <Clock className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-amber-700 leading-relaxed">
-                After payment, the platform owner will verify and approve your {submitted ? 'upgrade' : 'renewal'}. Your current plan stays active during review.
+                {t('billing.afterPaymentNote')}
               </p>
             </div>
           </div>
 
           {!submitted && (
             <Button className="w-full" onClick={submitRenew} disabled={submitting}>
-              {submitting ? 'Submitting...' : "I've completed payment"}
+              {submitting ? t('common.loading') : t('billing.completedPayment')}
             </Button>
           )}
 
           {submitted && (
             <div className="rounded-xl bg-green-50 border border-green-200 p-3 text-sm text-green-700 font-medium text-center">
-              Request submitted! The platform owner will review shortly.
+              {t('billing.requestSubmitted')}
             </div>
           )}
 
@@ -448,7 +454,7 @@ export default function BillingPage() {
             onClick={() => { setShowPaymentModal(false); setSubmitted(false) }}
             className="block w-full text-center text-sm text-gray-400 hover:text-gray-600 transition-colors"
           >
-            Close
+            {t('common.close')}
           </button>
         </div>
       </Modal>

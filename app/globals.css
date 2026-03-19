@@ -43,4 +43,14 @@
   .text-foreground {
     color: hsl(var(--foreground));
   }
+  .font-khmer {
+    font-family: 'Khmer OS Siemreap', 'Khmer OS', 'Battambang', 'Noto Sans Khmer', sans-serif;
+  }
+}
+
+/* When html has font-khmer class, apply Khmer font globally */
+html.font-khmer,
+html.font-khmer body,
+html.font-khmer * {
+  font-family: 'Khmer OS Siemreap', 'Khmer OS', 'Battambang', 'Noto Sans Khmer', sans-serif;
 }

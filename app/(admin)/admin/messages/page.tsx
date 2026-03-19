@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { Send, Store } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 
 interface ShopThread {
   id: string
@@ -32,6 +33,7 @@ export default function AdminMessagesPage() {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const { t, bilingual, lang } = useI18n()
 
   useEffect(() => {
     loadThreads()
@@ -82,16 +84,21 @@ export default function AdminMessagesPage() {
     setSending(false)
   }
 
+  const [mainTitle, subTitle] = bilingual('adminMsg.title')
+
   return (
     <div className="flex gap-6 h-[calc(100vh-7rem)]">
       {/* Thread List */}
       <div className="w-72 shrink-0 bg-white rounded-xl border border-gray-200 flex flex-col">
         <div className="px-4 py-3 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">Messages</h2>
+          <h2 className={cn('font-semibold text-gray-900', lang === 'km' && 'font-khmer')}>
+            {mainTitle}
+            <span className={cn('block text-xs opacity-60 font-normal', lang === 'km' ? '' : 'font-khmer')}>{subTitle}</span>
+          </h2>
         </div>
         <div className="flex-1 overflow-y-auto">
           {threads.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-8">No conversations yet</p>
+            <p className="text-sm text-gray-400 text-center py-8">{t('adminMsg.noConversations')}</p>
           ) : (
             threads.map((thread) => (
               <button
@@ -124,7 +131,7 @@ export default function AdminMessagesPage() {
       <div className="flex-1 flex flex-col bg-white rounded-xl border border-gray-200">
         {!activeShopId ? (
           <div className="flex-1 flex items-center justify-center text-gray-400">
-            Select a conversation
+            {t('adminMsg.selectConversation')}
           </div>
         ) : (
           <>
@@ -147,7 +154,7 @@ export default function AdminMessagesPage() {
               <div ref={bottomRef} />
             </div>
             <form onSubmit={handleSend} className="flex gap-2 p-4 border-t border-gray-200">
-              <Input placeholder="Type a message..." value={input} onChange={(e) => setInput(e.target.value)} className="flex-1" />
+              <Input placeholder={t('chat.typeMessage')} value={input} onChange={(e) => setInput(e.target.value)} className="flex-1" />
               <Button type="submit" disabled={sending || !input.trim()}>
                 <Send className="h-4 w-4" />
               </Button>
