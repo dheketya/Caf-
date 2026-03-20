@@ -101,7 +101,7 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
 
       {/* Version label */}
       <div className="px-5 py-1.5 border-t border-gray-800 text-gray-500 text-[10px]">
-        CaféOS v1.1.0
+        {`CaféOS v${process.env.APP_VERSION}`}
       </div>
     </>
   )

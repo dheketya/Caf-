@@ -187,7 +187,7 @@ export function Sidebar({ role, shopName, shopLogo, brandColor, isQuotaBlocked, 
         'border-t border-gray-100 text-gray-300 text-[10px]',
         collapsed && !mobileOpen ? 'text-center py-1.5' : 'px-5 py-1.5'
       )}>
-        {collapsed && !mobileOpen ? 'v1.1.0' : 'CaféOS v1.1.0'}
+        {collapsed && !mobileOpen ? `v${process.env.APP_VERSION}` : `CaféOS v${process.env.APP_VERSION}`}
       </div>
 
       {/* Toggle collapse - hidden on mobile */}
