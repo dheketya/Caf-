@@ -47,6 +47,8 @@ interface Category {
   id: string
   name: string
   color: string | null
+  parentId: string | null
+  children?: Category[]
 }
 
 interface ShopInfo {
@@ -69,6 +71,52 @@ function applyProductDiscount(price: number, discountType: string | null, discou
   if (!discountType || !discountValue) return price
   if (discountType === 'percentage') return Math.max(0, price * (1 - discountValue / 100))
   return Math.max(0, price - discountValue)
+}
+
+function ProductCard({ product, onClick, shopInfo, t }: { product: Product; onClick: (p: Product) => void; shopInfo: ShopInfo; t: (k: string) => string }) {
+  const availableSizes = (product.sizes as SizeOption[])?.filter((s) => s.price !== null) || []
+  const rawPrice = availableSizes.length > 0
+    ? Math.min(...availableSizes.map((s) => s.price!))
+    : product.price
+  const displayPrice = applyProductDiscount(rawPrice, product.discountType, product.discountValue)
+  const hasProductDiscount = product.discountType && product.discountValue
+
+  return (
+    <button
+      onClick={() => onClick(product)}
+      disabled={product.isOutOfStock}
+      className={cn(
+        'relative rounded-xl border text-left transition-all hover:shadow-md flex flex-col p-3 h-[140px]',
+        product.isOutOfStock ? 'bg-gray-50 border-gray-200 opacity-60' : 'bg-white border-gray-200 hover:border-brand-300'
+      )}
+    >
+      {product.isOutOfStock && <Badge variant="warning" className="absolute top-2 right-2 text-[10px]">{t('products.outOfStock')}</Badge>}
+      {hasProductDiscount && !product.isOutOfStock && (
+        <span className="absolute top-2 right-2 text-[9px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded">
+          {product.discountType === 'percentage' ? `${product.discountValue}% ${t('pos.off')}` : `$${product.discountValue} ${t('pos.off')}`}
+        </span>
+      )}
+      <div className="h-10 w-10 rounded-lg bg-gray-100 mb-2 flex items-center justify-center text-lg shrink-0">
+        {product.image ? <img src={product.image} alt="" className="h-full w-full object-cover rounded-lg" /> : '☕'}
+      </div>
+      <p className="text-sm font-medium text-gray-900 truncate w-full">{product.name}</p>
+      <div className="mt-auto">
+        <div className="flex items-center gap-1.5">
+          {hasProductDiscount && (
+            <span className="text-[11px] text-gray-400 line-through">
+              {formatCurrency(rawPrice)}
+            </span>
+          )}
+          <p className={cn('text-sm font-semibold', hasProductDiscount ? 'text-red-600' : 'text-brand-600')}>
+            {availableSizes.length > 0 ? `${t('pos.from')} ${formatCurrency(displayPrice)}` : formatCurrency(displayPrice)}
+          </p>
+        </div>
+        <p className="text-[10px] text-gray-400">
+          {availableSizes.length > 0 ? `${t('pos.from')} ${toKHR(displayPrice, shopInfo.exchangeRate)}` : toKHR(displayPrice, shopInfo.exchangeRate)}
+        </p>
+      </div>
+    </button>
+  )
 }
 
 export default function POSPage() {
@@ -132,7 +180,11 @@ export default function POSPage() {
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase())
-    const matchesCategory = !activeCategory || p.category?.id === activeCategory
+    if (!activeCategory) return matchesSearch
+    // Match direct category or parent category (show all sub-category products)
+    const parentCat = categories.find((c) => c.id === activeCategory)
+    const childIds = parentCat?.children?.map((c) => c.id) || []
+    const matchesCategory = p.category?.id === activeCategory || childIds.includes(p.category?.id || '')
     return matchesSearch && matchesCategory
   })
 
@@ -409,60 +461,62 @@ export default function POSPage() {
           </div>
         </div>
 
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+        <div className="flex gap-2 mb-2 overflow-x-auto pb-1">
           <button onClick={() => setActiveCategory(null)} className={cn('px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors', !activeCategory ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}>{t('pos.all')}</button>
-          {categories.map((cat) => (
-            <button key={cat.id} onClick={() => setActiveCategory(cat.id)} className={cn('px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors', activeCategory === cat.id ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}>{cat.name}</button>
+          {categories.filter((c) => !c.parentId).map((cat) => (
+            <button key={cat.id} onClick={() => setActiveCategory(cat.id)} className={cn('px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors', activeCategory === cat.id || cat.children?.some((s) => s.id === activeCategory) ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}>{cat.name}</button>
           ))}
         </div>
+        {/* Sub-category row */}
+        {(() => {
+          const activeCat = activeCategory ? categories.find((c) => c.id === activeCategory) : null
+          // Show sub-cats if a parent is active, or if a sub-cat is active (show siblings)
+          const parentCat = activeCat?.parentId ? categories.find((c) => c.id === activeCat.parentId) : activeCat
+          const subs = parentCat?.children || []
+          if (subs.length === 0) return null
+          return (
+            <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
+              <button onClick={() => setActiveCategory(parentCat!.id)} className={cn('px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors', activeCategory === parentCat!.id ? 'bg-brand-100 text-brand-700 border border-brand-300' : 'bg-gray-50 text-gray-500 hover:bg-gray-100')}>{t('pos.all')}</button>
+              {subs.map((sub) => (
+                <button key={sub.id} onClick={() => setActiveCategory(sub.id)} className={cn('px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors', activeCategory === sub.id ? 'bg-brand-100 text-brand-700 border border-brand-300' : 'bg-gray-50 text-gray-500 hover:bg-gray-100')}>{sub.name}</button>
+              ))}
+            </div>
+          )
+        })()}
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 overflow-y-auto flex-1 auto-rows-min">
-          {filteredProducts.map((product) => {
-            const availableSizes = (product.sizes as SizeOption[])?.filter((s) => s.price !== null) || []
-            const rawPrice = availableSizes.length > 0
-              ? Math.min(...availableSizes.map((s) => s.price!))
-              : product.price
-            const displayPrice = applyProductDiscount(rawPrice, product.discountType, product.discountValue)
-            const hasProductDiscount = product.discountType && product.discountValue
+        <div className="overflow-y-auto flex-1">
+          {(() => {
+            // Group products by sub-category when a parent category is active
+            const activeCat = activeCategory ? categories.find((c) => c.id === activeCategory) : null
+            const hasSubCategories = activeCat && !activeCat.parentId && activeCat.children && activeCat.children.length > 0
+
+            if (hasSubCategories) {
+              // Products directly in parent (no sub-category)
+              const directProducts = filteredProducts.filter((p) => p.category?.id === activeCat.id)
+              const sections = [
+                ...(directProducts.length > 0 ? [{ label: activeCat.name, products: directProducts }] : []),
+                ...activeCat.children!.map((sub) => ({
+                  label: sub.name,
+                  products: filteredProducts.filter((p) => p.category?.id === sub.id),
+                })).filter((s) => s.products.length > 0),
+              ]
+
+              return sections.map((section) => (
+                <div key={section.label} className="mb-4">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">{section.label}</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {section.products.map((product) => <ProductCard key={product.id} product={product} onClick={handleProductClick} shopInfo={shopInfo} t={t} />)}
+                  </div>
+                </div>
+              ))
+            }
 
             return (
-              <button
-                key={product.id}
-                onClick={() => handleProductClick(product)}
-                disabled={product.isOutOfStock}
-                className={cn(
-                  'relative rounded-xl border text-left transition-all hover:shadow-md flex flex-col p-3 h-[140px]',
-                  product.isOutOfStock ? 'bg-gray-50 border-gray-200 opacity-60' : 'bg-white border-gray-200 hover:border-brand-300'
-                )}
-              >
-                {product.isOutOfStock && <Badge variant="warning" className="absolute top-2 right-2 text-[10px]">{t('products.outOfStock')}</Badge>}
-                {hasProductDiscount && !product.isOutOfStock && (
-                  <span className="absolute top-2 right-2 text-[9px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded">
-                    {product.discountType === 'percentage' ? `${product.discountValue}% ${t('pos.off')}` : `$${product.discountValue} ${t('pos.off')}`}
-                  </span>
-                )}
-                <div className="h-10 w-10 rounded-lg bg-gray-100 mb-2 flex items-center justify-center text-lg shrink-0">
-                  {product.image ? <img src={product.image} alt="" className="h-full w-full object-cover rounded-lg" /> : '☕'}
-                </div>
-                <p className="text-sm font-medium text-gray-900 truncate w-full">{product.name}</p>
-                <div className="mt-auto">
-                  <div className="flex items-center gap-1.5">
-                    {hasProductDiscount && (
-                      <span className="text-[11px] text-gray-400 line-through">
-                        {formatCurrency(rawPrice)}
-                      </span>
-                    )}
-                    <p className={cn('text-sm font-semibold', hasProductDiscount ? 'text-red-600' : 'text-brand-600')}>
-                      {availableSizes.length > 0 ? `${t('pos.from')} ${formatCurrency(displayPrice)}` : formatCurrency(displayPrice)}
-                    </p>
-                  </div>
-                  <p className="text-[10px] text-gray-400">
-                    {availableSizes.length > 0 ? `${t('pos.from')} ${toKHR(displayPrice, shopInfo.exchangeRate)}` : toKHR(displayPrice, shopInfo.exchangeRate)}
-                  </p>
-                </div>
-              </button>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 auto-rows-min">
+                {filteredProducts.map((product) => <ProductCard key={product.id} product={product} onClick={handleProductClick} shopInfo={shopInfo} t={t} />)}
+              </div>
             )
-          })}
+          })()}
         </div>
       </div>
 

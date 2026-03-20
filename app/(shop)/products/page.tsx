@@ -30,6 +30,8 @@ interface Category {
   id: string
   name: string
   color: string | null
+  parentId: string | null
+  children?: Category[]
 }
 
 interface SizeEntry {
@@ -67,7 +69,9 @@ export default function ProductsPage() {
     discountValue: '',
   })
 
-  const [categoryForm, setCategoryForm] = useState({ name: '', color: '#6366f1' })
+  const [categoryForm, setCategoryForm] = useState({ name: '', color: '#6366f1', parentId: '' })
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
+  const [showDeleteCategoryConfirm, setShowDeleteCategoryConfirm] = useState<Category | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => { loadData() }, [])
@@ -166,15 +170,35 @@ export default function ProductsPage() {
   async function handleSaveCategory(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
+    const payload = {
+      ...(editingCategoryId && { id: editingCategoryId }),
+      name: categoryForm.name,
+      color: categoryForm.color,
+      parentId: categoryForm.parentId || null,
+    }
     await fetch('/api/categories', {
-      method: 'POST',
+      method: editingCategoryId ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(categoryForm),
+      body: JSON.stringify(payload),
     })
     setShowCategoryModal(false)
-    setCategoryForm({ name: '', color: '#6366f1' })
+    setCategoryForm({ name: '', color: '#6366f1', parentId: '' })
+    setEditingCategoryId(null)
     loadData()
     setLoading(false)
+  }
+
+  function openEditCategory(cat: Category) {
+    setEditingCategoryId(cat.id)
+    setCategoryForm({ name: cat.name, color: cat.color || '#6366f1', parentId: cat.parentId || '' })
+    setShowCategoryModal(true)
+  }
+
+  async function handleDeleteCategory() {
+    if (!showDeleteCategoryConfirm) return
+    await fetch(`/api/categories?id=${showDeleteCategoryConfirm.id}`, { method: 'DELETE' })
+    setShowDeleteCategoryConfirm(null)
+    loadData()
   }
 
   function addSizeRow() {
@@ -220,10 +244,33 @@ export default function ProductsPage() {
 
       {categories.length > 0 && (
         <div className="flex gap-2 flex-wrap">
-          {categories.map((cat) => (
-            <div key={cat.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-sm">
-              <span className="h-3 w-3 rounded-full" style={{ backgroundColor: cat.color || '#6366f1' }} />
-              {cat.name}
+          {categories.filter((c) => !c.parentId).map((cat) => (
+            <div key={cat.id} className="flex flex-col gap-1">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-sm group">
+                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: cat.color || '#6366f1' }} />
+                <span className="font-medium">{cat.name}</span>
+                <button onClick={() => openEditCategory(cat)} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-gray-100 rounded" title={t('common.edit')}>
+                  <Edit2 className="h-3 w-3 text-gray-400" />
+                </button>
+                <button onClick={() => setShowDeleteCategoryConfirm(cat)} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-red-50 rounded" title={t('common.delete')}>
+                  <Trash2 className="h-3 w-3 text-red-400" />
+                </button>
+              </div>
+              {cat.children && cat.children.length > 0 && (
+                <div className="flex gap-1.5 ml-4 flex-wrap">
+                  {cat.children.map((sub) => (
+                    <div key={sub.id} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 border border-gray-150 text-xs group/sub">
+                      {sub.name}
+                      <button onClick={() => openEditCategory(sub)} className="opacity-0 group-hover/sub:opacity-100 transition-opacity p-0.5 hover:bg-gray-100 rounded" title={t('common.edit')}>
+                        <Edit2 className="h-2.5 w-2.5 text-gray-400" />
+                      </button>
+                      <button onClick={() => setShowDeleteCategoryConfirm(sub)} className="opacity-0 group-hover/sub:opacity-100 transition-opacity p-0.5 hover:bg-red-50 rounded" title={t('common.delete')}>
+                        <Trash2 className="h-2.5 w-2.5 text-red-400" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -316,7 +363,14 @@ export default function ProductsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('products.category')}</label>
             <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className="flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">
               <option value="">{t('products.noCategory')}</option>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {categories.filter((c) => !c.parentId).map((c) => (
+                <optgroup key={c.id} label={c.name}>
+                  <option value={c.id}>{c.name}</option>
+                  {c.children?.map((sub) => (
+                    <option key={sub.id} value={sub.id}>↳ {sub.name}</option>
+                  ))}
+                </optgroup>
+              ))}
             </select>
           </div>
 
@@ -427,9 +481,22 @@ export default function ProductsPage() {
         )}
       </Modal>
 
-      {/* Add Category Modal */}
-      <Modal isOpen={showCategoryModal} onClose={() => setShowCategoryModal(false)} title={t('products.addCategory')}>
+      {/* Add/Edit Category Modal */}
+      <Modal isOpen={showCategoryModal} onClose={() => { setShowCategoryModal(false); setEditingCategoryId(null); setCategoryForm({ name: '', color: '#6366f1', parentId: '' }) }} title={editingCategoryId ? t('products.editCategory') : t('products.addCategory')}>
         <form onSubmit={handleSaveCategory} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('products.parentCategory')}</label>
+            <select
+              value={categoryForm.parentId}
+              onChange={(e) => setCategoryForm({ ...categoryForm, parentId: e.target.value })}
+              className="flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+            >
+              <option value="">{t('products.noParent')}</option>
+              {categories.filter((c) => !c.parentId && c.id !== editingCategoryId).map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
           <Input label={t('products.categoryName')} value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} required />
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('products.categoryColor')}</label>
@@ -437,6 +504,23 @@ export default function ProductsPage() {
           </div>
           <Button type="submit" className="w-full" disabled={loading}>{loading ? t('products.saving') : t('products.saveCategory')}</Button>
         </form>
+      </Modal>
+
+      {/* Delete Category Confirm */}
+      <Modal isOpen={!!showDeleteCategoryConfirm} onClose={() => setShowDeleteCategoryConfirm(null)} title={t('products.deleteCategory')}>
+        {showDeleteCategoryConfirm && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">{t('products.deleteCategoryConfirm')}</p>
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setShowDeleteCategoryConfirm(null)}>
+                {t('common.cancel')}
+              </Button>
+              <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={handleDeleteCategory}>
+                {t('common.delete')}
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )
