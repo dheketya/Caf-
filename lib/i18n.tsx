@@ -418,6 +418,11 @@ const translations: Record<string, { en: string; km: string }> = {
   'products.categoryName': { en: 'Name', km: 'ឈ្មោះ' },
   'products.categoryColor': { en: 'Color', km: 'ពណ៌' },
   'products.saveCategory': { en: 'Save Category', km: 'រក្សាទុកប្រភេទ' },
+  'products.editCategory': { en: 'Edit Category', km: 'កែប្រែប្រភេទ' },
+  'products.deleteCategory': { en: 'Delete Category', km: 'លុបប្រភេទ' },
+  'products.deleteCategoryConfirm': { en: 'Are you sure you want to delete this category? Products in this category will be uncategorized.', km: 'តើអ្នកប្រាកដជាចង់លុបប្រភេទនេះមែនទេ? ផលិតផលក្នុងប្រភេទនេះនឹងមិនមានប្រភេទ។' },
+  'products.parentCategory': { en: 'Parent Category', km: 'ប្រភេទមេ' },
+  'products.noParent': { en: 'None (top-level)', km: 'គ្មាន (កម្រិតកំពូល)' },
 
   // === Stock (additional) ===
   'stock.itemsTracked': { en: 'items tracked', km: 'សម្ភារៈដែលតាមដាន' },

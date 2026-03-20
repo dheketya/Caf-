@@ -242,6 +242,10 @@ model Category {
   color     String?
   sortOrder Int       @default(0) @map("sort_order")
 
+  parentId  String?   @map("parent_id")
+  parent    Category? @relation("SubCategories", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children  Category[] @relation("SubCategories")
+
   shopId    String    @map("shop_id")
   shop      Shop      @relation(fields: [shopId], references: [id])
 
@@ -251,6 +255,7 @@ model Category {
   updatedAt DateTime  @updatedAt @map("updated_at")
 
   @@index([shopId])
+  @@index([parentId])
   @@map("categories")
 }
 
