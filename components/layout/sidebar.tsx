@@ -25,6 +25,15 @@ import {
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
 
+// Client-side role module access (mirrors lib/permissions.ts)
+const roleModuleAccess: Record<string, string[]> = {
+  PLATFORM_OWNER: ['pos', 'products', 'stock', 'income', 'reports', 'users', 'billing', 'settings', 'chat', 'kitchen'],
+  SHOP_OWNER: ['pos', 'products', 'stock', 'income', 'reports', 'users', 'billing', 'settings', 'chat'],
+  MANAGER: ['pos', 'products', 'stock', 'income', 'reports', 'chat'],
+  CASHIER: ['pos', 'stock'],
+  KITCHEN: ['kitchen'],
+}
+
 interface NavItem {
   labelKey: string
   href: string
@@ -38,7 +47,7 @@ const shopNavItems: NavItem[] = [
   { labelKey: 'nav.products', href: '/products', icon: <Package className="h-5 w-5" />, module: 'products' },
   { labelKey: 'nav.stock', href: '/stock', icon: <Warehouse className="h-5 w-5" />, module: 'stock' },
   { labelKey: 'nav.income', href: '/income', icon: <DollarSign className="h-5 w-5" />, module: 'income' },
-  { labelKey: 'nav.customers', href: '/customers', icon: <UserCheck className="h-5 w-5" /> },
+  { labelKey: 'nav.customers', href: '/customers', icon: <UserCheck className="h-5 w-5" />, module: 'pos' },
   { labelKey: 'nav.reports', href: '/reports', icon: <BarChart3 className="h-5 w-5" />, module: 'reports' },
   { labelKey: 'nav.users', href: '/users', icon: <Users className="h-5 w-5" />, module: 'users' },
   { labelKey: 'nav.billing', href: '/billing', icon: <CreditCard className="h-5 w-5" />, module: 'billing' },
@@ -67,7 +76,9 @@ const BLOCKED_MODULES = ['pos']
 export function Sidebar({ role, shopName, shopLogo, brandColor, isQuotaBlocked, collapsed, mobileOpen, onToggle, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
   const { lang, setLang, bilingual } = useI18n()
-  const items = role === 'KITCHEN' ? kitchenNavItems : shopNavItems
+  const allItems = role === 'KITCHEN' ? kitchenNavItems : shopNavItems
+  const allowedModules = roleModuleAccess[role] || []
+  const items = allItems.filter((item) => !item.module || allowedModules.includes(item.module))
 
   const sidebarContent = (
     <>
