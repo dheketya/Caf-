@@ -3,6 +3,11 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { compare } from 'bcryptjs'
 import { prisma } from './db'
 
+// Auto-set NEXTAUTH_URL on Vercel if not explicitly configured
+if (process.env.VERCEL_URL && !process.env.NEXTAUTH_URL) {
+  process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -12,7 +17,10 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
+        if (!credentials?.email || !credentials?.password) {
+          console.log('[Auth] Missing credentials')
+          return null
+        }
 
         // Login by email (shop owners) or username.shopCode (staff)
         const user = await prisma.user.findUnique({
@@ -20,13 +28,26 @@ export const authOptions: NextAuthOptions = {
           include: { shop: true },
         })
 
-        if (!user || !user.isActive) return null
+        if (!user) {
+          console.log('[Auth] User not found:', credentials.email)
+          return null
+        }
+        if (!user.isActive) {
+          console.log('[Auth] User inactive:', credentials.email)
+          return null
+        }
 
         // Check shop status
-        if (user.shop && user.shop.status === 'SUSPENDED') return null
+        if (user.shop && user.shop.status === 'SUSPENDED') {
+          console.log('[Auth] Shop suspended:', user.shop.id)
+          return null
+        }
 
         const isValid = await compare(credentials.password, user.passwordHash)
-        if (!isValid) return null
+        if (!isValid) {
+          console.log('[Auth] Invalid password for:', credentials.email)
+          return null
+        }
 
         // Update last login for user + shop
         await prisma.user.update({
@@ -76,6 +97,8 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: process.env.NEXTAUTH_SECRET,
+  // Trust the host header on Vercel (behind proxy)
+  ...(process.env.VERCEL && { trustHost: true }),
 }
 
 // Type augmentation for next-auth
