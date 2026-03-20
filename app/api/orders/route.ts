@@ -142,6 +142,23 @@ export async function POST(request: NextRequest) {
     })
     const orderNumber = (lastOrder?.orderNumber ?? 0) + 1
 
+    // Resolve customer — use provided, or fall back to walk-in default
+    let customerId = data.customerId
+    if (!customerId) {
+      const walkIn = await prisma.customer.upsert({
+        where: {
+          shopId_phone: { phone: '000-WALK-IN', shopId: user.shopId },
+        },
+        update: {},
+        create: {
+          phone: '000-WALK-IN',
+          name: 'Walk-in Customer',
+          shopId: user.shopId,
+        },
+      })
+      customerId = walkIn.id
+    }
+
     // Create order with items
     const order = await prisma.order.create({
       data: {
@@ -159,7 +176,7 @@ export async function POST(request: NextRequest) {
         notes: data.notes,
         shopId: user.shopId,
         userId: user.id,
-        customerId: data.customerId,
+        customerId,
         items: {
           create: orderItems.map((item) => ({
             productId: item.productId,
@@ -221,16 +238,14 @@ export async function POST(request: NextRequest) {
     })
 
     // Update customer stats
-    if (data.customerId) {
-      await prisma.customer.update({
-        where: { id: data.customerId },
-        data: {
-          totalVisits: { increment: 1 },
-          totalSpent: { increment: total },
-          lastVisitAt: new Date(),
-        },
-      })
-    }
+    await prisma.customer.update({
+      where: { id: customerId },
+      data: {
+        totalVisits: { increment: 1 },
+        totalSpent: { increment: total },
+        lastVisitAt: new Date(),
+      },
+    })
 
     return NextResponse.json(order, { status: 201 })
   } catch (error) {
@@ -278,6 +293,7 @@ export async function GET(request: NextRequest) {
     include: {
       items: { include: { product: true } },
       user: { select: { name: true } },
+      customer: { select: { id: true, phone: true, name: true } },
     },
     orderBy: { createdAt: 'desc' },
     take: 100,

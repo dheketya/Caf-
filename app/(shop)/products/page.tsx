@@ -223,27 +223,35 @@ export default function ProductsPage() {
   const [titleMain, titleSub] = bilingual('products.title')
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className={cn('text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className={cn('text-xl sm:text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>
             {titleMain}
             <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{titleSub}</span>
           </h1>
           <p className="text-sm text-gray-500">{products.length} {t('products.count')}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowCategoryModal(true)}>
+        <div className="flex gap-1.5 sm:gap-2 shrink-0">
+          <Button variant="outline" onClick={() => setShowCategoryModal(true)} size="sm" className="hidden sm:inline-flex">
             <Plus className="h-4 w-4 mr-1" /> {t('products.addCategory')}
           </Button>
-          <Button onClick={openCreate}>
+          <Button onClick={openCreate} size="sm" className="sm:hidden">
+            <Plus className="h-4 w-4" />
+          </Button>
+          <Button onClick={openCreate} className="hidden sm:inline-flex">
             <Plus className="h-4 w-4 mr-1" /> {t('products.add')}
           </Button>
         </div>
       </div>
 
+      {/* Mobile category add button */}
+      <button onClick={() => setShowCategoryModal(true)} className="sm:hidden text-xs text-brand-600 font-medium">
+        + {t('products.addCategory')}
+      </button>
+
       {categories.length > 0 && (
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap overflow-x-auto">
           {categories.filter((c) => !c.parentId).map((cat) => (
             <div key={cat.id} className="flex flex-col gap-1">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-sm group">
@@ -281,67 +289,67 @@ export default function ProductsPage() {
         <Input placeholder={t('products.search')} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-2 sm:gap-3">
         {filtered.map((product) => {
           const availableSizes = (product.sizes as any[])?.filter((s: any) => s.price !== null) || []
           return (
             <Card key={product.id}>
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="h-14 w-14 rounded-xl bg-gray-100 flex items-center justify-center text-2xl shrink-0">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
                     {product.image ? (
-                      <img src={product.image} alt="" className="h-full w-full object-cover rounded-xl" />
+                      <img src={product.image} alt="" className="h-full w-full object-cover rounded-lg" />
                     ) : (
-                      <Package className="h-6 w-6 text-gray-400" />
+                      <Package className="h-5 w-5 text-gray-400" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-medium text-gray-900 truncate">{product.name}</h3>
-                      {product.isOutOfStock && <Badge variant="warning">{t('products.outOfStock')}</Badge>}
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="text-sm font-medium text-gray-900 truncate">{product.name}</h3>
+                      {product.isOutOfStock && <Badge variant="warning" className="text-[9px] shrink-0">{t('products.outOfStock')}</Badge>}
                     </div>
-                    {product.category && (
-                      <p className="text-xs text-gray-500">{product.category.name}</p>
-                    )}
-                    {availableSizes.length > 0 ? (
-                      <div className="flex gap-2 mt-1">
-                        {availableSizes.map((s: any) => (
-                          <span key={s.name} className="text-xs text-gray-600">
-                            <span className="font-medium">{s.name}</span> {formatCurrency(s.price)}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm font-semibold text-brand-600 mt-1">{formatCurrency(product.price)}</p>
-                    )}
-                    <div className="flex gap-1.5 mt-1">
-                      {product.hasSugarLevel && <Badge variant="info" className="text-[10px]">{t('products.hasSugar')}</Badge>}
-                      {availableSizes.length > 0 && <Badge variant="default" className="text-[10px]">{t('products.hasSize')}</Badge>}
-                      {product.discountType && (
-                        <Badge variant="success" className="text-[10px]">
-                          {product.discountType === 'percentage' ? `${product.discountValue}% off` : `$${product.discountValue} off`}
-                        </Badge>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                      {product.category && <span>{product.category.name}</span>}
+                      {product.category && (availableSizes.length > 0 || product.price) && <span>·</span>}
+                      {availableSizes.length > 0 ? (
+                        <span className="font-semibold text-brand-600">
+                          {availableSizes.map((s: any) => `${s.name} ${formatCurrency(s.price)}`).join(' / ')}
+                        </span>
+                      ) : (
+                        <span className="font-semibold text-brand-600">{formatCurrency(product.price)}</span>
                       )}
                     </div>
                   </div>
                   {/* Actions */}
-                  <div className="flex gap-1 shrink-0">
+                  <div className="flex gap-0.5 shrink-0">
                     <button
                       onClick={() => openEdit(product)}
-                      className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+                      className="h-7 w-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
                       title={t('products.edit')}
                     >
-                      <Edit2 className="h-4 w-4" />
+                      <Edit2 className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={() => setShowDeleteConfirm(product)}
-                      className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      className="h-7 w-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                       title={t('products.deleteProduct')}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
+                {/* Badges row */}
+                {(product.hasSugarLevel || availableSizes.length > 0 || product.discountType) && (
+                  <div className="flex gap-1 mt-2 flex-wrap">
+                    {product.hasSugarLevel && <Badge variant="info" className="text-[9px]">{t('products.hasSugar')}</Badge>}
+                    {availableSizes.length > 0 && <Badge variant="default" className="text-[9px]">{t('products.hasSize')}</Badge>}
+                    {product.discountType && (
+                      <Badge variant="success" className="text-[9px]">
+                        {product.discountType === 'percentage' ? `${product.discountValue}%` : `$${product.discountValue}`} off
+                      </Badge>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )

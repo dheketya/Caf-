@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { signOut, useSession } from 'next-auth/react'
-import { LogOut, User, Bell, MessageCircle, X } from 'lucide-react'
+import { LogOut, User, Bell, MessageCircle, X, Menu } from 'lucide-react'
 import { QuotaWidget } from './quota-widget'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -15,6 +15,7 @@ interface HeaderProps {
     limit: number | null
     resetDate: Date
   }
+  onMenuClick?: () => void
 }
 
 interface ChatPreview {
@@ -26,7 +27,7 @@ interface ChatPreview {
   unreadCount: number
 }
 
-export function Header({ quota }: HeaderProps) {
+export function Header({ quota, onMenuClick }: HeaderProps) {
   const { data: session } = useSession()
   const { t, lang } = useI18n()
   const [unreadCount, setUnreadCount] = useState(0)
@@ -96,18 +97,30 @@ export function Header({ quota }: HeaderProps) {
   const isShopUser = session?.user?.role !== 'PLATFORM_OWNER'
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
-      <div className="flex items-center gap-4">
+    <header className="sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between border-b border-gray-200 bg-white px-3 sm:px-6">
+      <div className="flex items-center gap-3">
+        {/* Hamburger menu - mobile only */}
+        {onMenuClick && (
+          <button
+            onClick={onMenuClick}
+            className="lg:hidden p-2 -ml-1 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            title="Menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        )}
         {quota && session?.user?.role !== 'KITCHEN' && (
-          <QuotaWidget
-            used={quota.used}
-            limit={quota.limit}
-            resetDate={quota.resetDate}
-          />
+          <div className="hidden sm:block">
+            <QuotaWidget
+              used={quota.used}
+              limit={quota.limit}
+              resetDate={quota.resetDate}
+            />
+          </div>
         )}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Bell with dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
@@ -125,7 +138,7 @@ export function Header({ quota }: HeaderProps) {
 
           {/* Dropdown */}
           {showDropdown && (
-            <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50">
+            <div className="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] sm:w-80 max-w-80 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50">
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                 <h3 className="text-sm font-semibold text-gray-900">
                   {t('header.notifications')}
@@ -194,7 +207,7 @@ export function Header({ quota }: HeaderProps) {
           )}
         </div>
 
-        <div className="flex items-center gap-2 pl-3 border-l border-gray-200">
+        <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-gray-200">
           <div className="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center">
             <User className="h-4 w-4 text-brand-600" />
           </div>

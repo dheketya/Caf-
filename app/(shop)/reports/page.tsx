@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn, formatCurrency, toKHR } from '@/lib/utils'
-import { BarChart3, ShoppingCart, Package, Banknote, QrCode, ArrowLeftRight, CalendarDays } from 'lucide-react'
+import { BarChart3, ShoppingCart, Package, Banknote, QrCode, ArrowLeftRight, CalendarDays, Users, UserCheck } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
 
 interface PaymentBreakdown {
@@ -18,6 +18,13 @@ interface DiscountSummary {
   totalSaved: number
 }
 
+interface CustomerBreakdown {
+  walkInOrders: number
+  walkInRevenue: number
+  customerOrders: number
+  customerRevenue: number
+}
+
 interface SalesReport {
   totalSales: number
   totalRevenue: number
@@ -26,6 +33,7 @@ interface SalesReport {
   topProducts: { name: string; count: number; revenue: number }[]
   paymentBreakdown: PaymentBreakdown[]
   discountBreakdown: DiscountSummary[]
+  customerBreakdown: CustomerBreakdown
 }
 
 function getMonthOptions() {
@@ -142,7 +150,21 @@ export default function ReportsPage() {
           .map(([type, data]) => ({ type, ...data }))
           .sort((a, b) => b.totalSaved - a.totalSaved)
 
-        setReport({ totalSales, totalRevenue, totalDiscount, avgOrderValue, topProducts, paymentBreakdown, discountBreakdown })
+        // Customer breakdown: walk-in vs registered
+        let walkInOrders = 0, walkInRevenue = 0, customerOrders = 0, customerRevenue = 0
+        for (const order of orders) {
+          const isWalkIn = !order.customer || order.customer.phone === '000-WALK-IN'
+          if (isWalkIn) {
+            walkInOrders++
+            walkInRevenue += order.total
+          } else {
+            customerOrders++
+            customerRevenue += order.total
+          }
+        }
+        const customerBreakdown = { walkInOrders, walkInRevenue, customerOrders, customerRevenue }
+
+        setReport({ totalSales, totalRevenue, totalDiscount, avgOrderValue, topProducts, paymentBreakdown, discountBreakdown, customerBreakdown })
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -155,24 +177,22 @@ export default function ReportsPage() {
   const [titleMain, titleSub] = bilingual('reports.title')
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className={cn('text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>{titleMain}
-            <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{titleSub}</span>
-          </h1>
-          <p className="text-sm text-gray-500">{periodLabel} {t('reports.summary')}</p>
-        </div>
+    <div className="space-y-4 sm:space-y-6">
+      <div>
+        <h1 className={cn('text-xl sm:text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>{titleMain}
+          <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{titleSub}</span>
+        </h1>
+        <p className="text-sm text-gray-500">{periodLabel} {t('reports.summary')}</p>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="space-y-2 sm:space-y-0 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
         {/* Period */}
         <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-1">
           <button
             onClick={() => setPeriod('today')}
             className={cn(
-              'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+              'flex-1 sm:flex-none px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
               period === 'today' ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50'
             )}
           >
@@ -181,7 +201,7 @@ export default function ReportsPage() {
           <button
             onClick={() => setPeriod('month')}
             className={cn(
-              'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+              'flex-1 sm:flex-none px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
               period === 'month' ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50'
             )}
           >
@@ -196,7 +216,7 @@ export default function ReportsPage() {
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700"
+              className="h-9 w-full sm:w-auto rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700"
             >
               {monthOptions.map((m) => (
                 <option key={m.value} value={m.value}>{m.label}</option>
@@ -206,9 +226,9 @@ export default function ReportsPage() {
         )}
 
         {/* Payment filter */}
-        <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-1">
+        <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-1 overflow-x-auto">
           {[
-            { value: '', label: t('pos.all') },
+            { value: '', label: t('pos.all'), icon: null },
             { value: 'CASH', label: t('pos.cash'), icon: <Banknote className="h-3.5 w-3.5" /> },
             { value: 'QR_EWALLET', label: t('pos.bank'), icon: <QrCode className="h-3.5 w-3.5" /> },
             { value: 'SPLIT', label: t('pos.cashAndBank'), icon: <ArrowLeftRight className="h-3.5 w-3.5" /> },
@@ -217,7 +237,7 @@ export default function ReportsPage() {
               key={opt.value}
               onClick={() => setFilterPayment(opt.value)}
               className={cn(
-                'flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm font-medium transition-colors',
+                'flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
                 filterPayment === opt.value ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'
               )}
             >
@@ -232,40 +252,34 @@ export default function ReportsPage() {
       ) : (
         <>
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
             <Card>
-              <CardContent className="flex items-center gap-4 py-5">
-                <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center">
-                  <ShoppingCart className="h-6 w-6 text-blue-600" />
+              <CardContent className="p-3 sm:p-5">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-blue-50 flex items-center justify-center mb-2">
+                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">{t('reports.totalTransactions')}</p>
-                  <p className="text-2xl font-bold text-gray-900">{report?.totalSales || 0}</p>
-                </div>
+                <p className="text-[10px] sm:text-sm text-gray-500 truncate">{t('reports.totalTransactions')}</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900">{report?.totalSales || 0}</p>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="flex items-center gap-4 py-5">
-                <div className="h-12 w-12 rounded-xl bg-green-50 flex items-center justify-center">
-                  <BarChart3 className="h-6 w-6 text-green-600" />
+              <CardContent className="p-3 sm:p-5">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-green-50 flex items-center justify-center mb-2">
+                  <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">{t('reports.totalRevenue')}</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(report?.totalRevenue || 0)}</p>
-                  <p className="text-xs text-gray-400">{toKHR(report?.totalRevenue || 0, exchangeRate)}</p>
-                </div>
+                <p className="text-[10px] sm:text-sm text-gray-500 truncate">{t('reports.totalRevenue')}</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900">{formatCurrency(report?.totalRevenue || 0)}</p>
+                <p className="text-[9px] sm:text-xs text-gray-400">{toKHR(report?.totalRevenue || 0, exchangeRate)}</p>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="flex items-center gap-4 py-5">
-                <div className="h-12 w-12 rounded-xl bg-purple-50 flex items-center justify-center">
-                  <Package className="h-6 w-6 text-purple-600" />
+              <CardContent className="p-3 sm:p-5">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-purple-50 flex items-center justify-center mb-2">
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">{t('reports.avgOrderValue')}</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(report?.avgOrderValue || 0)}</p>
-                  <p className="text-xs text-gray-400">{toKHR(report?.avgOrderValue || 0, exchangeRate)}</p>
-                </div>
+                <p className="text-[10px] sm:text-sm text-gray-500 truncate">{t('reports.avgOrderValue')}</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900">{formatCurrency(report?.avgOrderValue || 0)}</p>
+                <p className="text-[9px] sm:text-xs text-gray-400">{toKHR(report?.avgOrderValue || 0, exchangeRate)}</p>
               </CardContent>
             </Card>
           </div>
@@ -281,16 +295,17 @@ export default function ReportsPage() {
               ) : (
                 <div className="space-y-3">
                   {report?.topProducts.map((product, i) => (
-                    <div key={product.name} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-gray-400 w-6">{i + 1}</span>
-                        <span className="text-sm font-medium text-gray-900">{product.name}</span>
+                    <div key={product.name} className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                        <span className="text-sm font-medium text-gray-400 w-5 sm:w-6 shrink-0">{i + 1}</span>
+                        <span className="text-sm font-medium text-gray-900 truncate">{product.name}</span>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm text-gray-500">{product.count} {t('reports.sold')}</span>
+                      <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                        <span className="text-xs sm:text-sm text-gray-500 hidden sm:inline">{product.count} {t('reports.sold')}</span>
+                        <span className="text-xs text-gray-500 sm:hidden">x{product.count}</span>
                         <div className="text-right">
                           <span className="text-sm font-medium text-gray-900">{formatCurrency(product.revenue)}</span>
-                          <p className="text-[11px] text-gray-400">{toKHR(product.revenue, exchangeRate)}</p>
+                          <p className="text-[10px] sm:text-[11px] text-gray-400">{toKHR(product.revenue, exchangeRate)}</p>
                         </div>
                       </div>
                     </div>
@@ -310,7 +325,7 @@ export default function ReportsPage() {
                 {report?.paymentBreakdown.length === 0 ? (
                   <p className="text-sm text-gray-400 text-center py-4">{t('reports.noSales')}</p>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {report?.paymentBreakdown.map((pm) => {
                       const pct = report.totalRevenue > 0 ? Math.round((pm.revenue / report.totalRevenue) * 100) : 0
                       const icons: Record<string, React.ReactNode> = {
@@ -320,18 +335,18 @@ export default function ReportsPage() {
                       }
                       return (
                         <div key={pm.method}>
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-between mb-1 gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
                               {icons[pm.method] || <Banknote className="h-4 w-4 text-gray-400" />}
-                              <span className="text-sm font-medium text-gray-900">
+                              <span className="text-sm font-medium text-gray-900 truncate">
                                 {PAYMENT_LABELS[pm.method] || pm.method}
                               </span>
-                              <span className="text-xs text-gray-400">{pm.count} {t('reports.order')}{pm.count !== 1 ? 's' : ''}</span>
+                              <span className="text-xs text-gray-400 hidden sm:inline">{pm.count} {t('reports.order')}{pm.count !== 1 ? 's' : ''}</span>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 shrink-0">
                               <div className="text-right">
                                 <span className="text-sm font-medium text-gray-900">{formatCurrency(pm.revenue)}</span>
-                                <p className="text-[11px] text-gray-400">{toKHR(pm.revenue, exchangeRate)}</p>
+                                <p className="text-[10px] sm:text-[11px] text-gray-400">{toKHR(pm.revenue, exchangeRate)}</p>
                               </div>
                               <span className="text-xs text-gray-400 w-8 text-right">{pct}%</span>
                             </div>
@@ -352,9 +367,9 @@ export default function ReportsPage() {
           {report && report.discountBreakdown.length > 0 && (
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <CardTitle>{t('reports.discountGiven')}</CardTitle>
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <p className="text-sm font-bold text-red-600">-{formatCurrency(report.totalDiscount)}</p>
                     <p className="text-[10px] text-gray-400">-{toKHR(report.totalDiscount, exchangeRate)}</p>
                   </div>
@@ -363,22 +378,79 @@ export default function ReportsPage() {
               <CardContent>
                 <div className="space-y-3">
                   {report.discountBreakdown.map((d) => (
-                    <div key={d.type} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">{d.type === 'Loyalty Reward' ? '🎉' : '🏷️'}</span>
-                        <div>
-                          <span className="text-sm font-medium text-gray-900">
+                    <div key={d.type} className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-sm shrink-0">{d.type === 'Loyalty Reward' ? '🎉' : '🏷️'}</span>
+                        <div className="min-w-0">
+                          <span className="text-sm font-medium text-gray-900 truncate block">
                             {d.type === 'Loyalty Reward' ? t('reports.loyaltyReward') : d.type === 'Manual Discount' ? t('reports.manualDiscount') : d.type}
                           </span>
                           <p className="text-xs text-gray-400">{d.count} {t('reports.order')}{d.count !== 1 ? 's' : ''}</p>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         <p className="text-sm font-medium text-red-600">-{formatCurrency(d.totalSaved)}</p>
                         <p className="text-[10px] text-gray-400">-{toKHR(d.totalSaved, exchangeRate)}</p>
                       </div>
                     </div>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Customer Breakdown */}
+          {report && report.totalSales > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('reports.customerBreakdown')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {/* Walk-in */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1 gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Users className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm font-medium text-gray-900">{t('reports.walkIn')}</span>
+                        <span className="text-xs text-gray-400">{report.customerBreakdown.walkInOrders} {t('reports.order')}{report.customerBreakdown.walkInOrders !== 1 ? 's' : ''}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="text-right">
+                          <span className="text-sm font-medium text-gray-900">{formatCurrency(report.customerBreakdown.walkInRevenue)}</span>
+                          <p className="text-[10px] sm:text-[11px] text-gray-400">{toKHR(report.customerBreakdown.walkInRevenue, exchangeRate)}</p>
+                        </div>
+                        <span className="text-xs text-gray-400 w-8 text-right">
+                          {report.totalRevenue > 0 ? Math.round((report.customerBreakdown.walkInRevenue / report.totalRevenue) * 100) : 0}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-gray-400" style={{ width: `${report.totalRevenue > 0 ? (report.customerBreakdown.walkInRevenue / report.totalRevenue) * 100 : 0}%` }} />
+                    </div>
+                  </div>
+                  {/* Registered */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1 gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <UserCheck className="h-4 w-4 text-brand-500" />
+                        <span className="text-sm font-medium text-gray-900">{t('reports.registered')}</span>
+                        <span className="text-xs text-gray-400">{report.customerBreakdown.customerOrders} {t('reports.order')}{report.customerBreakdown.customerOrders !== 1 ? 's' : ''}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="text-right">
+                          <span className="text-sm font-medium text-gray-900">{formatCurrency(report.customerBreakdown.customerRevenue)}</span>
+                          <p className="text-[10px] sm:text-[11px] text-gray-400">{toKHR(report.customerBreakdown.customerRevenue, exchangeRate)}</p>
+                        </div>
+                        <span className="text-xs text-gray-400 w-8 text-right">
+                          {report.totalRevenue > 0 ? Math.round((report.customerBreakdown.customerRevenue / report.totalRevenue) * 100) : 0}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-brand-500" style={{ width: `${report.totalRevenue > 0 ? (report.customerBreakdown.customerRevenue / report.totalRevenue) * 100 : 0}%` }} />
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

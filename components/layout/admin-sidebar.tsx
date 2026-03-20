@@ -11,6 +11,7 @@ import {
   Settings,
   Coffee,
   Globe,
+  X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
@@ -24,20 +25,30 @@ const adminNavItems = [
   { labelKey: 'admin.settings', href: '/admin/settings', icon: <Settings className="h-5 w-5" /> },
 ]
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  mobileOpen: boolean
+  onMobileClose: () => void
+}
+
+export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
   const pathname = usePathname()
   const { lang, setLang, bilingual } = useI18n()
 
-  return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-gray-900 flex flex-col">
+  const sidebarContent = (
+    <>
       <div className="flex items-center gap-2 px-6 py-5 border-b border-gray-800">
         <Coffee className="h-7 w-7 text-brand-400" />
-        <div>
+        <div className="flex-1">
           <h1 className="text-lg font-bold text-white">CaféOS</h1>
           <p className={cn('text-xs text-gray-400', lang === 'km' && 'font-khmer')}>
             {lang === 'en' ? 'Admin Portal' : 'ផ្ទាល់ខ្លួនអ្នកគ្រប់គ្រង'}
           </p>
         </div>
+        {mobileOpen && (
+          <button onClick={onMobileClose} className="lg:hidden p-1 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800">
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
@@ -51,6 +62,7 @@ export function AdminSidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onMobileClose}
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 isActive
@@ -86,6 +98,30 @@ export function AdminSidebar() {
           </span>
         </span>
       </button>
-    </aside>
+
+      {/* Version label */}
+      <div className="px-5 py-1.5 border-t border-gray-800 text-gray-500 text-[10px]">
+        CaféOS v1.1.0
+      </div>
+    </>
+  )
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex fixed left-0 top-0 z-40 h-screen w-64 bg-gray-900 flex-col">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="lg:hidden fixed inset-0 z-40">
+          <div className="fixed inset-0 bg-black/50" onClick={onMobileClose} />
+          <aside className="fixed left-0 top-0 z-50 h-screen w-72 bg-gray-900 flex flex-col shadow-xl">
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+    </>
   )
 }

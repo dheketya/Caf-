@@ -55,56 +55,48 @@ export default function DashboardClient({
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         <Card>
-          <CardContent className="flex items-center gap-4 py-5">
-            <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center">
-              <ShoppingCart className="h-6 w-6 text-blue-600" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-blue-50 flex items-center justify-center mb-2">
+              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">{t('dashboard.todaySales')}</p>
-              <p className="text-2xl font-bold text-gray-900">{todayOrdersCount}</p>
-            </div>
+            <p className="text-[10px] sm:text-sm text-gray-500 truncate">{t('dashboard.todaySales')}</p>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900">{todayOrdersCount}</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="flex items-center gap-4 py-5">
-            <div className="h-12 w-12 rounded-xl bg-green-50 flex items-center justify-center">
-              <DollarSign className="h-6 w-6 text-green-600" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-green-50 flex items-center justify-center mb-2">
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">{t('dashboard.todayRevenue')}</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(todayRevenue, shopCurrency)}
-              </p>
-            </div>
+            <p className="text-[10px] sm:text-sm text-gray-500 truncate">{t('dashboard.todayRevenue')}</p>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900">
+              {formatCurrency(todayRevenue, shopCurrency)}
+            </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="flex items-center gap-4 py-5">
-            <div className="h-12 w-12 rounded-xl bg-purple-50 flex items-center justify-center">
-              <Package className="h-6 w-6 text-purple-600" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-purple-50 flex items-center justify-center mb-2">
+              <Package className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">{t('dashboard.products')}</p>
-              <p className="text-2xl font-bold text-gray-900">{productCount}</p>
-            </div>
+            <p className="text-[10px] sm:text-sm text-gray-500 truncate">{t('dashboard.products')}</p>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900">{productCount}</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="flex items-center gap-4 py-5">
-            <div className="h-12 w-12 rounded-xl bg-brand-50 flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-brand-600" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-brand-50 flex items-center justify-center mb-2">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-brand-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">{t('dashboard.monthlyQuota')}</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {quotaUsed}{quotaLimit ? ` / ${quotaLimit}` : ''}
-              </p>
-            </div>
+            <p className="text-[10px] sm:text-sm text-gray-500 truncate">{t('dashboard.monthlyQuota')}</p>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900">
+              {quotaUsed}{quotaLimit ? ` / ${quotaLimit}` : ''}
+            </p>
           </CardContent>
         </Card>
       </div>

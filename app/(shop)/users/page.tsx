@@ -111,31 +111,29 @@ export default function UsersPage() {
   const [titleMain, titleSub] = bilingual('users.staffManagement')
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className={cn('text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>{titleMain}
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className={cn('text-xl sm:text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>{titleMain}
             <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{titleSub}</span>
           </h1>
           <p className="text-sm text-gray-500">{users.length} {t('users.teamMembers')}</p>
         </div>
-        <Button onClick={() => { setForm({ username: '', name: '', password: '', role: 'CASHIER' }); setError(''); setShowCreateModal(true) }}>
-          <Plus className="h-4 w-4 mr-1" /> {t('users.addStaff')}
+        <Button onClick={() => { setForm({ username: '', name: '', password: '', role: 'CASHIER' }); setError(''); setShowCreateModal(true) }} className="shrink-0">
+          <Plus className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">{t('users.addStaff')}</span>
         </Button>
       </div>
 
       {/* Shop Code Info */}
       {shopCode && (
-        <div className="rounded-lg bg-gray-50 border border-gray-200 px-4 py-3 flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">{t('users.shopCode')}: <span className="font-mono font-bold text-gray-900">{shopCode}</span></p>
-            <p className="text-xs text-gray-400">{t('users.staffLoginFormat')}: <span className="font-mono">username.{shopCode}</span></p>
-          </div>
+        <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 sm:px-4 py-3">
+          <p className="text-sm text-gray-600">{t('users.shopCode')}: <span className="font-mono font-bold text-gray-900">{shopCode}</span></p>
+          <p className="text-xs text-gray-400">{t('users.staffLoginFormat')}: <span className="font-mono">username.{shopCode}</span></p>
         </div>
       )}
 
-      {/* Staff List */}
-      <div className="overflow-x-auto bg-white rounded-xl border border-gray-200">
+      {/* Staff List - Table on md+, Cards on mobile */}
+      <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-gray-200">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200">
@@ -192,6 +190,51 @@ export default function UsersPage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-3">
+        {users.map((u) => (
+          <div key={u.id} className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-gray-900 truncate">{u.name}</p>
+                <p className="font-mono text-xs text-gray-500 truncate">{getUsername(u.email)}</p>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Badge variant={u.isActive ? 'success' : 'danger'} className="text-[10px]">
+                  {u.isActive ? t('users.active') : t('users.inactive')}
+                </Badge>
+                <Badge variant={(roleColors[u.role] || 'default') as any} className="text-[10px]">
+                  {u.role.replace('_', ' ')}
+                </Badge>
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+              <p className="text-xs text-gray-400">
+                {u.lastLoginAt ? formatDateTime(u.lastLoginAt) : t('users.never')}
+              </p>
+              {u.role !== 'SHOP_OWNER' && (
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => { setShowResetModal(u); setNewPassword(''); setSuccess('') }}
+                    className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-amber-600 hover:bg-amber-50"
+                    title={t('users.resetPassword')}
+                  >
+                    <KeyRound className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleToggle(u)}
+                    className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50"
+                    title={u.isActive ? t('users.deactivate') : t('users.activate')}
+                  >
+                    {u.isActive ? <Ban className="h-4 w-4" /> : <CheckCircle className="h-4 w-4 text-green-500" />}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Create User Modal */}

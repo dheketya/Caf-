@@ -99,17 +99,17 @@ export default function StockPage() {
   const [titleMain, titleSub] = bilingual('stock.title')
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className={cn('text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className={cn('text-xl sm:text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>
             {titleMain}
             <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{titleSub}</span>
           </h1>
           <p className="text-sm text-gray-500">{items.length} {t('stock.itemsTracked')}</p>
         </div>
-        <Button onClick={() => setShowAddModal(true)}>
-          <Plus className="h-4 w-4 mr-1" /> {t('stock.addItem')}
+        <Button onClick={() => setShowAddModal(true)} className="shrink-0">
+          <Plus className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">{t('stock.addItem')}</span>
         </Button>
       </div>
 
@@ -124,7 +124,8 @@ export default function StockPage() {
         </Card>
       )}
 
-      <div className="overflow-x-auto">
+      {/* Table - desktop */}
+      <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-gray-200">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200">
@@ -168,6 +169,56 @@ export default function StockPage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-2">
+        {items.map((item) => {
+          const isLow = item.currentQuantity <= item.reorderThreshold
+          return (
+            <div key={item.id} className="bg-white rounded-xl border border-gray-200 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className={cn('h-9 w-9 rounded-lg flex items-center justify-center shrink-0', isLow ? 'bg-amber-50' : 'bg-gray-50')}>
+                    <Warehouse className={cn('h-4 w-4', isLow ? 'text-amber-500' : 'text-gray-400')} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 truncate">{item.name}</p>
+                    <p className="text-xs text-gray-400">${item.costPerUnit.toFixed(2)} / {item.unit}</p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className={cn('text-lg font-bold', isLow ? 'text-amber-600' : 'text-gray-900')}>{item.currentQuantity}</p>
+                  <p className="text-[10px] text-gray-400">{item.unit}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                <div className="flex items-center gap-2">
+                  {isLow ? (
+                    <Badge variant="warning" className="text-[10px]">{t('stock.low')}</Badge>
+                  ) : (
+                    <Badge variant="success" className="text-[10px]">{t('stock.ok')}</Badge>
+                  )}
+                  <span className="text-[10px] text-gray-400">{t('stock.reorderAt')}: {item.reorderThreshold}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-7"
+                  onClick={() => {
+                    setSelectedItem(item)
+                    setShowAdjustModal(true)
+                  }}
+                >
+                  {t('stock.adjust')}
+                </Button>
+              </div>
+            </div>
+          )
+        })}
+        {items.length === 0 && (
+          <p className="py-8 text-center text-gray-400 text-sm">{t('stock.noItems')}</p>
+        )}
       </div>
 
       {/* Add Item Modal */}

@@ -25,6 +25,7 @@ interface ShopLayoutClientProps {
 
 export function ShopLayoutClient({ children, role, shopName, shopLogo, brandColor, packageName, quota }: ShopLayoutClientProps) {
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const { t, lang } = useI18n()
 
   return (
@@ -36,12 +37,14 @@ export function ShopLayoutClient({ children, role, shopName, shopLogo, brandColo
         brandColor={brandColor}
         isQuotaBlocked={quota.isBlocked}
         collapsed={collapsed}
+        mobileOpen={mobileOpen}
         onToggle={() => setCollapsed(!collapsed)}
+        onMobileClose={() => setMobileOpen(false)}
       />
-      <div className={cn('transition-all duration-200', collapsed ? 'ml-16' : 'ml-64')}>
-        <Header quota={quota} />
+      <div className={cn('transition-all duration-200', collapsed ? 'lg:ml-16' : 'lg:ml-64')}>
+        <Header quota={quota} onMenuClick={() => setMobileOpen(true)} />
         {quota.isBlocked && (
-          <div className="mx-6 mt-4 rounded-xl border border-amber-200 bg-amber-50 p-5">
+          <div className="mx-3 sm:mx-6 mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-6 w-6 text-amber-500 flex-shrink-0 mt-0.5" />
               <div>
@@ -49,7 +52,7 @@ export function ShopLayoutClient({ children, role, shopName, shopLogo, brandColo
                 <p className={cn('text-sm text-amber-700 mt-1', lang === 'km' && 'font-khmer')}>
                   <strong>{packageName}</strong> {t('layout.quotaReachedMsg').replace('{limit}', quota.limit?.toLocaleString() || '')}
                 </p>
-                <div className="flex gap-3 mt-3">
+                <div className="flex flex-wrap gap-3 mt-3">
                   <Link
                     href="/billing"
                     className="inline-flex items-center rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 transition-colors"
@@ -64,7 +67,7 @@ export function ShopLayoutClient({ children, role, shopName, shopLogo, brandColo
             </div>
           </div>
         )}
-        <main className="p-6">{children}</main>
+        <main className="p-3 sm:p-4 lg:p-6">{children}</main>
       </div>
     </div>
   )

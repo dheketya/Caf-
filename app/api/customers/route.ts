@@ -20,8 +20,17 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const phone = searchParams.get('phone')
   const search = searchParams.get('search')
+  const walkin = searchParams.get('walkin')
 
-  const where: any = { shopId: user.shopId }
+  // Return walk-in customer stats
+  if (walkin) {
+    const walkInCustomer = await prisma.customer.findUnique({
+      where: { shopId_phone: { shopId: user.shopId, phone: '000-WALK-IN' } },
+    })
+    return NextResponse.json(walkInCustomer || { totalVisits: 0, totalSpent: 0 })
+  }
+
+  const where: any = { shopId: user.shopId, phone: { not: '000-WALK-IN' } }
 
   if (phone) {
     // Exact phone lookup

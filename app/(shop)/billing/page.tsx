@@ -130,9 +130,9 @@ export default function BillingPage() {
   const [titleMain, titleSub] = bilingual('billing.title')
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-4 sm:space-y-6 max-w-3xl">
       <div>
-        <h1 className={cn('text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>{titleMain}
+        <h1 className={cn('text-xl sm:text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>{titleMain}
           <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{titleSub}</span>
         </h1>
         <p className="text-sm text-gray-500">{t('billing.manage')}</p>
@@ -153,55 +153,64 @@ export default function BillingPage() {
 
       {/* Expiration Alert - plan expired but still in 7-day grace period */}
       {billing.daysUntilExpiry !== null && billing.daysUntilExpiry <= 0 && billing.daysUntilDowngrade !== null && billing.daysUntilDowngrade > 0 && (
-        <div className="rounded-xl bg-red-50 border border-red-200 p-4 flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-red-800">{t('billing.expired')}</p>
-            <p className="text-sm text-red-700 mt-0.5">
-              {lang === 'en'
-                ? `Your plan has expired! You have ${billing.daysUntilDowngrade} days to renew before auto-downgrade to Free plan.`
-                : `គម្រោងរបស់អ្នកបានផុតកំណត់! អ្នកមាន ${billing.daysUntilDowngrade} ថ្ងៃដើម្បីបន្តមុនពេលបន្ថយស្វ័យប្រវត្តិទៅគម្រោងឥតគិតថ្លៃ។`}
-            </p>
+        <div className="rounded-xl bg-red-50 border border-red-200 p-3 sm:p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-red-800">{t('billing.expired')}</p>
+              <p className="text-xs sm:text-sm text-red-700 mt-0.5">
+                {lang === 'en'
+                  ? `Your plan has expired! You have ${billing.daysUntilDowngrade} days to renew before auto-downgrade to Free plan.`
+                  : `គម្រោងរបស់អ្នកបានផុតកំណត់! អ្នកមាន ${billing.daysUntilDowngrade} ថ្ងៃដើម្បីបន្តមុនពេលបន្ថយស្វ័យប្រវត្តិទៅគម្រោងឥតគិតថ្លៃ។`}
+              </p>
+              <Button size="sm" variant="destructive" onClick={openRenew} className="mt-2 sm:hidden">{t('billing.renewNow')}</Button>
+            </div>
+            <Button size="sm" variant="destructive" onClick={openRenew} className="hidden sm:inline-flex shrink-0">{t('billing.renewNow')}</Button>
           </div>
-          <Button size="sm" variant="destructive" onClick={openRenew}>{t('billing.renewNow')}</Button>
         </div>
       )}
       {/* Already auto-downgraded */}
       {billing.daysUntilExpiry !== null && billing.daysUntilExpiry <= 0 && (billing.daysUntilDowngrade === null || billing.daysUntilDowngrade <= 0) && (
-        <div className="rounded-xl bg-red-50 border border-red-200 p-4 flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-red-800">{t('billing.expired')}</p>
-            <p className="text-sm text-red-700 mt-0.5">{t('billing.expiredAlert')}</p>
+        <div className="rounded-xl bg-red-50 border border-red-200 p-3 sm:p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-red-800">{t('billing.expired')}</p>
+              <p className="text-xs sm:text-sm text-red-700 mt-0.5">{t('billing.expiredAlert')}</p>
+              <Button size="sm" variant="destructive" onClick={openRenew} className="mt-2 sm:hidden">{t('billing.renewNow')}</Button>
+            </div>
+            <Button size="sm" variant="destructive" onClick={openRenew} className="hidden sm:inline-flex shrink-0">{t('billing.renewNow')}</Button>
           </div>
-          <Button size="sm" variant="destructive" onClick={openRenew}>{t('billing.renewNow')}</Button>
         </div>
       )}
       {billing.daysUntilExpiry !== null && billing.daysUntilExpiry > 0 && billing.daysUntilExpiry <= 7 && (
-        <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-amber-800">
-              {t('billing.expiresIn')} {billing.daysUntilExpiry} {t('billing.days')}
-            </p>
-            <p className="text-sm text-amber-700 mt-0.5">{t('billing.dueDateAlert')}</p>
+        <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 sm:p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-800">
+                {t('billing.expiresIn')} {billing.daysUntilExpiry} {t('billing.days')}
+              </p>
+              <p className="text-xs sm:text-sm text-amber-700 mt-0.5">{t('billing.dueDateAlert')}</p>
+              <Button size="sm" onClick={openRenew} className="mt-2 sm:hidden">{t('billing.renewNow')}</Button>
+            </div>
+            <Button size="sm" onClick={openRenew} className="hidden sm:inline-flex shrink-0">{t('billing.renewNow')}</Button>
           </div>
-          <Button size="sm" onClick={openRenew}>{t('billing.renewNow')}</Button>
         </div>
       )}
 
       {/* Current Plan Card */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <CardTitle className="flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-brand-500" />
               {t('billing.currentPlan')}
             </CardTitle>
-            <div className="flex items-center gap-2">
-              <Badge variant="info" className="text-sm px-3 py-1">{billing.plan}</Badge>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Badge variant="info" className="text-xs sm:text-sm px-2 sm:px-3 py-0.5 sm:py-1">{billing.plan}</Badge>
               {!isFree && (
-                <Badge variant="default" className="text-sm px-3 py-1 capitalize">{billing.billingCycle}</Badge>
+                <Badge variant="default" className="text-xs sm:text-sm px-2 sm:px-3 py-0.5 sm:py-1 capitalize">{billing.billingCycle}</Badge>
               )}
             </div>
           </div>
@@ -223,7 +232,7 @@ export default function BillingPage() {
 
           {/* Plan dates */}
           {!isFree && billing.planExpiresAt && (
-            <div className="flex items-center gap-4 text-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm">
               {billing.planStartedAt && (
                 <span className="text-gray-500">
                   {t('billing.startedOn')}: <span className="font-medium text-gray-700">
@@ -266,13 +275,13 @@ export default function BillingPage() {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-2">
-            <Button onClick={openUpgrade} disabled={billing.upgradeStatus === 'pending'}>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
+            <Button onClick={openUpgrade} disabled={billing.upgradeStatus === 'pending'} className="w-full sm:w-auto">
               <ArrowUpRight className="h-4 w-4 mr-1.5" />
               {isFree ? t('billing.upgrade') : t('billing.changePlan')}
             </Button>
             {!isFree && (
-              <Button variant="outline" onClick={openRenew} disabled={billing.upgradeStatus === 'pending'}>
+              <Button variant="outline" onClick={openRenew} disabled={billing.upgradeStatus === 'pending'} className="w-full sm:w-auto">
                 <RefreshCw className="h-4 w-4 mr-1.5" />
                 {t('billing.renew')}
               </Button>
@@ -291,9 +300,9 @@ export default function BillingPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-start gap-5">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5">
               <div className="p-2 bg-white rounded-xl border-2 border-gray-100 shadow-sm shrink-0">
-                <img src={billing.khqrImage} alt="KHQR" className="w-[160px] h-auto rounded-lg" />
+                <img src={billing.khqrImage} alt="KHQR" className="w-[140px] sm:w-[160px] h-auto rounded-lg" />
               </div>
               <div className="space-y-2">
                 <p className="text-sm text-gray-600">
@@ -314,7 +323,7 @@ export default function BillingPage() {
       {/* Available Plans */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-3">{t('billing.availablePlans')}</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
           {billing.packages.map((pkg, i) => {
             const isCurrent = pkg.id === billing.packageId
             const icons = [Shield, Zap, Sparkles]
@@ -421,20 +430,18 @@ export default function BillingPage() {
                       {i < billing.planHistory.length - 1 && <div className="w-px h-8 bg-gray-100 mt-1" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                         <span className="font-medium text-sm text-gray-900">{entry.packageName}</span>
                         <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-medium', actionColors[entry.action] || 'bg-gray-100 text-gray-600')}>
                           {actionLabel}
                         </span>
                         <span className="text-xs text-gray-400 capitalize">{entry.billingCycle}</span>
+                        {entry.price > 0 && <span className="text-xs font-medium text-gray-500">{formatCurrency(entry.price)}</span>}
                       </div>
-                      <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
-                        <span>
-                          {new Date(entry.startDate).toLocaleDateString(lang === 'km' ? 'km-KH' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          {entry.endDate && ` — ${new Date(entry.endDate).toLocaleDateString(lang === 'km' ? 'km-KH' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
-                        </span>
-                        {entry.price > 0 && <span className="font-medium text-gray-500">{formatCurrency(entry.price)}</span>}
-                      </div>
+                      <p className="mt-0.5 text-[10px] sm:text-xs text-gray-400 truncate">
+                        {new Date(entry.startDate).toLocaleDateString(lang === 'km' ? 'km-KH' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {entry.endDate && ` — ${new Date(entry.endDate).toLocaleDateString(lang === 'km' ? 'km-KH' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
+                      </p>
                     </div>
                   </div>
                 )

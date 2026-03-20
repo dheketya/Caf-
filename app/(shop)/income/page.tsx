@@ -120,66 +120,60 @@ export default function IncomePage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className={cn('text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className={cn('text-xl sm:text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>
           {titleMain}
           <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{titleSub}</span>
         </h1>
-        <Button onClick={() => setShowModal(true)}>
-          <Plus className="h-4 w-4 mr-1" /> {t('income.addEntry')}
+        <Button onClick={() => setShowModal(true)} className="shrink-0">
+          <Plus className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">{t('income.addEntry')}</span>
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <Card>
-          <CardContent className="flex items-center gap-4 py-5">
-            <div className="h-12 w-12 rounded-xl bg-green-50 flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-green-600" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-green-50 flex items-center justify-center mb-2">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">{t('income.totalIncomeSummary')}</p>
-              <p className="text-xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
-              <p className="text-xs text-gray-400">{toKHR(totalIncome, exchangeRate)}</p>
-            </div>
+            <p className="text-[10px] sm:text-sm text-gray-500 truncate">{t('income.totalIncomeSummary')}</p>
+            <p className="text-base sm:text-xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
+            <p className="text-[9px] sm:text-xs text-gray-400">{toKHR(totalIncome, exchangeRate)}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="flex items-center gap-4 py-5">
-            <div className="h-12 w-12 rounded-xl bg-red-50 flex items-center justify-center">
-              <TrendingDown className="h-6 w-6 text-red-600" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-red-50 flex items-center justify-center mb-2">
+              <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">{t('income.totalExpenseSummary')}</p>
-              <p className="text-xl font-bold text-red-600">{formatCurrency(totalExpense)}</p>
-              <p className="text-xs text-gray-400">{toKHR(totalExpense, exchangeRate)}</p>
-            </div>
+            <p className="text-[10px] sm:text-sm text-gray-500 truncate">{t('income.totalExpenseSummary')}</p>
+            <p className="text-base sm:text-xl font-bold text-red-600">{formatCurrency(totalExpense)}</p>
+            <p className="text-[9px] sm:text-xs text-gray-400">{toKHR(totalExpense, exchangeRate)}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="flex items-center gap-4 py-5">
-            <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center">
-              <DollarSign className="h-6 w-6 text-blue-600" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-blue-50 flex items-center justify-center mb-2">
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">{t('income.netProfitLoss')}</p>
-              <p className={`text-xl font-bold ${totalIncome - totalExpense >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatCurrency(totalIncome - totalExpense)}
-              </p>
-              <p className="text-xs text-gray-400">{toKHR(totalIncome - totalExpense, exchangeRate)}</p>
-            </div>
+            <p className="text-[10px] sm:text-sm text-gray-500 truncate">{t('income.netProfitLoss')}</p>
+            <p className={`text-base sm:text-xl font-bold ${totalIncome - totalExpense >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrency(totalIncome - totalExpense)}
+            </p>
+            <p className="text-[9px] sm:text-xs text-gray-400">{toKHR(totalIncome - totalExpense, exchangeRate)}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="space-y-2 sm:space-y-0 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
         {/* Period */}
         <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-1">
-          <button onClick={() => setPeriod('all')} className={cn('px-3 py-1.5 rounded-md text-sm font-medium transition-colors', period === 'all' ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50')}>
+          <button onClick={() => setPeriod('all')} className={cn('flex-1 sm:flex-none px-3 py-1.5 rounded-md text-sm font-medium transition-colors', period === 'all' ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50')}>
             {t('income.allTime')}
           </button>
-          <button onClick={() => setPeriod('month')} className={cn('px-3 py-1.5 rounded-md text-sm font-medium transition-colors', period === 'month' ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50')}>
+          <button onClick={() => setPeriod('month')} className={cn('flex-1 sm:flex-none px-3 py-1.5 rounded-md text-sm font-medium transition-colors', period === 'month' ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50')}>
             {t('income.month')}
           </button>
         </div>
@@ -187,7 +181,7 @@ export default function IncomePage() {
         {period === 'month' && (
           <div className="flex items-center gap-1.5">
             <CalendarDays className="h-4 w-4 text-gray-400" />
-            <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700">
+            <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="h-9 w-full sm:w-auto rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700">
               {(() => {
                 const months = []
                 const now = new Date()
@@ -210,28 +204,29 @@ export default function IncomePage() {
             { value: 'INCOME', label: t('income.income'), color: 'text-green-600' },
             { value: 'EXPENSE', label: t('income.expense'), color: 'text-red-600' },
           ].map((ft) => (
-            <button key={ft.value} onClick={() => setFilterType(ft.value)} className={cn('px-3 py-1.5 rounded-md text-sm font-medium transition-colors', filterType === ft.value ? 'bg-gray-900 text-white' : `${ft.color || 'text-gray-600'} hover:bg-gray-50`)}>
+            <button key={ft.value} onClick={() => setFilterType(ft.value)} className={cn('flex-1 sm:flex-none px-3 py-1.5 rounded-md text-sm font-medium transition-colors', filterType === ft.value ? 'bg-gray-900 text-white' : `${ft.color || 'text-gray-600'} hover:bg-gray-50`)}>
               {ft.label}
             </button>
           ))}
         </div>
 
         {/* Payment filter */}
-        <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-1">
+        <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-1 overflow-x-auto">
           {[
             { value: '', label: t('income.allPay'), icon: undefined },
             { value: 'CASH', label: t('pos.cash'), icon: <Banknote className="h-3.5 w-3.5" /> },
             { value: 'QR_EWALLET', label: t('pos.bank'), icon: <QrCode className="h-3.5 w-3.5" /> },
             { value: 'SPLIT', label: t('income.mixed'), icon: <ArrowLeftRight className="h-3.5 w-3.5" /> },
           ].map((opt) => (
-            <button key={opt.value} onClick={() => setFilterPayment(opt.value)} className={cn('flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm font-medium transition-colors', filterPayment === opt.value ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50')}>
+            <button key={opt.value} onClick={() => setFilterPayment(opt.value)} className={cn('flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap', filterPayment === opt.value ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50')}>
               {opt.icon}{opt.label}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="overflow-x-auto bg-white rounded-xl border border-gray-200">
+      {/* Table - desktop */}
+      <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-gray-200">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200">
@@ -273,6 +268,45 @@ export default function IncomePage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-2">
+        {entries.map((entry) => (
+          <div key={entry.id} className="bg-white rounded-xl border border-gray-200 p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant={entry.type === 'INCOME' ? 'success' : 'danger'} className="text-[10px]">
+                    {entry.type === 'INCOME' ? t('income.income') : t('income.expense')}
+                  </Badge>
+                  <span className="text-xs text-gray-400">{formatDate(entry.date)}</span>
+                  <Badge variant={entry.approvalStatus === 'APPROVED' ? 'success' : entry.approvalStatus === 'PENDING' ? 'warning' : 'danger'} className="text-[10px]">
+                    {entry.approvalStatus}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2 mt-1.5">
+                  {(entry.expenseCategory || entry.category) && (
+                    <span className="text-xs text-gray-600">{entry.expenseCategory || entry.category}</span>
+                  )}
+                  {entry.paymentMethod && (
+                    <span className="text-[10px] text-gray-400">{PAYMENT_LABELS[entry.paymentMethod] || entry.paymentMethod}</span>
+                  )}
+                </div>
+                {entry.note && <p className="text-xs text-gray-400 truncate mt-0.5">{entry.note}</p>}
+              </div>
+              <div className="text-right shrink-0">
+                <p className={`text-sm font-bold ${entry.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}>
+                  {entry.type === 'INCOME' ? '+' : '-'}{formatCurrency(entry.amount)}
+                </p>
+                <p className="text-[10px] text-gray-400">{toKHR(entry.amount, exchangeRate)}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+        {entries.length === 0 && (
+          <p className="py-8 text-center text-gray-400 text-sm">{t('income.noEntries')}</p>
+        )}
       </div>
 
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={t('income.addEntry')}>

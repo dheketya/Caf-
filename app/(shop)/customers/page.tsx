@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { formatCurrency, formatDate, toKHR, cn } from '@/lib/utils'
-import { Search, UserCheck, Phone, ShoppingCart, Award, Plus, Edit2, Trash2 } from 'lucide-react'
+import { Search, UserCheck, Phone, ShoppingCart, Award, Plus, Edit2, Trash2, Users } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
 
 interface Customer {
@@ -50,9 +50,11 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(false)
 
   const [form, setForm] = useState({ phone: '', name: '', note: '' })
+  const [walkIn, setWalkIn] = useState<{ totalVisits: number; totalSpent: number } | null>(null)
 
   useEffect(() => {
     loadCustomers()
+    fetch('/api/customers?walkin=true').then((r) => r.json()).then(setWalkIn)
     fetch('/api/shops/me').then((r) => r.json()).then((shop) => {
       if (shop && !shop.error) {
         setExchangeRate(shop.exchangeRate || 4100)
@@ -134,56 +136,77 @@ export default function CustomersPage() {
   const [titleMain, titleSub] = bilingual('customers.title')
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className={cn('text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>{titleMain}
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className={cn('text-xl sm:text-2xl font-bold text-gray-900', lang === 'km' && 'font-khmer')}>{titleMain}
             <span className={cn('block text-sm opacity-60', lang === 'km' ? '' : 'font-khmer')}>{titleSub}</span>
           </h1>
           <p className="text-sm text-gray-500">{totalCustomers} {t('customers.registered')}</p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-1" /> {t('customers.add')}
+        <Button onClick={openCreate} className="shrink-0">
+          <Plus className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">{t('customers.add')}</span>
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <Card>
-          <CardContent className="flex items-center gap-4 py-5">
-            <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center">
-              <UserCheck className="h-6 w-6 text-blue-600" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-blue-50 flex items-center justify-center mb-2">
+              <UserCheck className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">{t('customers.totalCustomers')}</p>
-              <p className="text-2xl font-bold text-gray-900">{totalCustomers}</p>
-            </div>
+            <p className="text-[10px] sm:text-sm text-gray-500 truncate">{t('customers.totalCustomers')}</p>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900">{totalCustomers}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="flex items-center gap-4 py-5">
-            <div className="h-12 w-12 rounded-xl bg-green-50 flex items-center justify-center">
-              <ShoppingCart className="h-6 w-6 text-green-600" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-green-50 flex items-center justify-center mb-2">
+              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">{t('customers.customerRevenue')}</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalRevenue)}</p>
-              <p className="text-xs text-gray-400">{toKHR(totalRevenue, exchangeRate)}</p>
-            </div>
+            <p className="text-[10px] sm:text-sm text-gray-500 truncate">{t('customers.customerRevenue')}</p>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900">{formatCurrency(totalRevenue)}</p>
+            <p className="text-[9px] sm:text-xs text-gray-400">{toKHR(totalRevenue, exchangeRate)}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="flex items-center gap-4 py-5">
-            <div className="h-12 w-12 rounded-xl bg-purple-50 flex items-center justify-center">
-              <Award className="h-6 w-6 text-purple-600" />
+          <CardContent className="p-3 sm:p-5">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-purple-50 flex items-center justify-center mb-2">
+              <Award className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">{t('customers.avgVisits')}</p>
-              <p className="text-2xl font-bold text-gray-900">{avgVisits}</p>
-            </div>
+            <p className="text-[10px] sm:text-sm text-gray-500 truncate">{t('customers.avgVisits')}</p>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900">{avgVisits}</p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Walk-in Customer Summary */}
+      {walkIn && walkIn.totalVisits > 0 && (
+        <Card className="border-gray-200 bg-gray-50">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-gray-200 flex items-center justify-center shrink-0">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-700">{t('customers.walkIn')}</p>
+                <p className="text-xs text-gray-400">{t('customers.walkInDesc')}</p>
+              </div>
+              <div className="flex gap-4 sm:gap-6 shrink-0 text-right">
+                <div>
+                  <p className="text-lg sm:text-xl font-bold text-gray-700">{walkIn.totalVisits}</p>
+                  <p className="text-[10px] text-gray-400">{t('customers.totalVisits')}</p>
+                </div>
+                <div>
+                  <p className="text-lg sm:text-xl font-bold text-gray-700">{formatCurrency(walkIn.totalSpent)}</p>
+                  <p className="text-[10px] text-gray-400">{toKHR(walkIn.totalSpent, exchangeRate)}</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Search */}
       <div className="relative">
@@ -191,8 +214,8 @@ export default function CustomersPage() {
         <Input placeholder={t('customers.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
       </div>
 
-      {/* Customer List */}
-      <div className="overflow-x-auto bg-white rounded-xl border border-gray-200">
+      {/* Customer List - Table on md+, Cards on mobile */}
+      <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-gray-200">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200">
@@ -259,6 +282,52 @@ export default function CustomersPage() {
         </table>
       </div>
 
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-3">
+        {customers.map((customer) => (
+          <div
+            key={customer.id}
+            className="bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50"
+            onClick={() => openDetail(customer)}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-10 w-10 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
+                  <UserCheck className="h-5 w-5 text-brand-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-medium text-gray-900 truncate">{customer.name || '—'}</p>
+                  <p className="text-xs text-gray-500 flex items-center gap-1"><Phone className="h-3 w-3" /> {customer.phone}</p>
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-sm font-bold text-gray-900">{formatCurrency(customer.totalSpent)}</p>
+                <p className="text-[10px] text-gray-400">{customer.totalVisits} {t('customers.totalVisits').toLowerCase()}</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-gray-400">{customer.lastVisitAt ? formatDate(customer.lastVisitAt) : t('customers.noOrdersYet')}</p>
+                {loyaltyEnabled && customer.totalVisits >= loyaltyTarget && <Badge variant="success" className="text-[10px]">{t('customers.loyalty')}</Badge>}
+              </div>
+              <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                <button onClick={(e) => openEdit(customer, e)} className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-brand-600 hover:bg-brand-50">
+                  <Edit2 className="h-4 w-4" />
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(customer) }} className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+        {customers.length === 0 && (
+          <p className="py-8 text-center text-gray-400 text-sm">
+            {search ? t('customers.noCustomersFound') : t('customers.noCustomersYet')}
+          </p>
+        )}
+      </div>
+
       {/* Create / Edit Customer Modal */}
       <Modal isOpen={showFormModal} onClose={() => setShowFormModal(false)} title={editingCustomer ? t('customers.edit') : t('customers.add')}>
         <form onSubmit={handleSave} className="space-y-4">
@@ -310,37 +379,37 @@ export default function CustomersPage() {
         {selectedCustomer && (
           <div className="space-y-5">
             {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-              <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-full bg-brand-50 flex items-center justify-center">
-                  <UserCheck className="h-7 w-7 text-brand-600" />
+            <div className="flex items-center justify-between gap-3 pb-4 border-b border-gray-100">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-11 w-11 sm:h-14 sm:w-14 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
+                  <UserCheck className="h-5 w-5 sm:h-7 sm:w-7 text-brand-600" />
                 </div>
-                <div>
-                  <p className="text-lg font-bold text-gray-900">{selectedCustomer.name || '—'}</p>
-                  <p className="text-sm text-gray-500 flex items-center gap-1"><Phone className="h-3.5 w-3.5" /> {selectedCustomer.phone}</p>
+                <div className="min-w-0">
+                  <p className="text-base sm:text-lg font-bold text-gray-900 truncate">{selectedCustomer.name || '—'}</p>
+                  <p className="text-xs sm:text-sm text-gray-500 flex items-center gap-1"><Phone className="h-3.5 w-3.5" /> {selectedCustomer.phone}</p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={() => { setShowDetail(false); openEdit(selectedCustomer) }}>
-                <Edit2 className="h-3.5 w-3.5 mr-1" /> {t('customers.edit')}
+              <Button variant="outline" size="sm" onClick={() => { setShowDetail(false); openEdit(selectedCustomer) }} className="shrink-0">
+                <Edit2 className="h-3.5 w-3.5 sm:mr-1" /> <span className="hidden sm:inline">{t('customers.edit')}</span>
               </Button>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-lg bg-gray-50 p-3 text-center">
-                <p className="text-2xl font-bold text-gray-900">{selectedCustomer.totalVisits}</p>
-                <p className="text-xs text-gray-500">{t('customers.totalVisits')}</p>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              <div className="rounded-lg bg-gray-50 p-2 sm:p-3 text-center">
+                <p className="text-xl sm:text-2xl font-bold text-gray-900">{selectedCustomer.totalVisits}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500">{t('customers.totalVisits')}</p>
               </div>
-              <div className="rounded-lg bg-gray-50 p-3 text-center">
-                <p className="text-lg font-bold text-gray-900">{formatCurrency(selectedCustomer.totalSpent)}</p>
-                <p className="text-[11px] text-gray-400">{toKHR(selectedCustomer.totalSpent, exchangeRate)}</p>
-                <p className="text-xs text-gray-500">{t('customers.spent')}</p>
+              <div className="rounded-lg bg-gray-50 p-2 sm:p-3 text-center">
+                <p className="text-sm sm:text-lg font-bold text-gray-900">{formatCurrency(selectedCustomer.totalSpent)}</p>
+                <p className="text-[9px] sm:text-[11px] text-gray-400">{toKHR(selectedCustomer.totalSpent, exchangeRate)}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500">{t('customers.spent')}</p>
               </div>
-              <div className="rounded-lg bg-gray-50 p-3 text-center">
-                <p className="text-lg font-bold text-gray-900">
+              <div className="rounded-lg bg-gray-50 p-2 sm:p-3 text-center">
+                <p className="text-sm sm:text-lg font-bold text-gray-900">
                   {selectedCustomer.totalVisits > 0 ? formatCurrency(selectedCustomer.totalSpent / selectedCustomer.totalVisits) : '$0'}
                 </p>
-                <p className="text-xs text-gray-500">{t('customers.avgPerVisit')}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500">{t('customers.avgPerVisit')}</p>
               </div>
             </div>
 

@@ -235,6 +235,9 @@ const translations: Record<string, { en: string; km: string }> = {
   'reports.monthly': { en: 'Monthly', km: 'ប្រចាំខែ' },
   'reports.paymentBreakdown': { en: 'Payment Breakdown', km: 'ការបែងចែកការបង់ប្រាក់' },
   'reports.discountGiven': { en: 'Discount Given', km: 'បញ្ចុះតម្លៃដែលបានផ្តល់' },
+  'reports.customerBreakdown': { en: 'Customer Breakdown', km: 'ការបែងចែកអតិថិជន' },
+  'reports.walkIn': { en: 'Walk-in (No Phone)', km: 'អតិថិជនទូទៅ (គ្មានលេខទូរស័ព្ទ)' },
+  'reports.registered': { en: 'Registered Customers', km: 'អតិថិជនបានចុះឈ្មោះ' },
 
   // === Users ===
   'users.title': { en: 'Users', km: 'អ្នកប្រើប្រាស់' },
@@ -471,6 +474,8 @@ const translations: Record<string, { en: string; km: string }> = {
 
   // === Customers (additional) ===
   'customers.registered': { en: 'registered customers', km: 'អតិថិជនបានចុះឈ្មោះ' },
+  'customers.walkIn': { en: 'Walk-in Customer', km: 'អតិថិជនទូទៅ' },
+  'customers.walkInDesc': { en: 'Orders without customer phone number', km: 'ការបញ្ជាទិញដែលគ្មានលេខទូរស័ព្ទអតិថិជន' },
   'customers.totalCustomers': { en: 'Total Customers', km: 'អតិថិជនសរុប' },
   'customers.customerRevenue': { en: 'Customer Revenue', km: 'ចំណូលពីអតិថិជន' },
   'customers.avgVisits': { en: 'Avg Visits', km: 'ការមកមធ្យម' },

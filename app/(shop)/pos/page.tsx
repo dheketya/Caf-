@@ -136,6 +136,7 @@ export default function POSPage() {
   const [error, setError] = useState('')
   const [lastOrder, setLastOrder] = useState<any>(null)
   const [showInvoice, setShowInvoice] = useState(false)
+  const [showMobileCart, setShowMobileCart] = useState(false)
   const invoiceRef = useRef<HTMLDivElement>(null)
 
   // Customization modal
@@ -451,7 +452,7 @@ export default function POSPage() {
   }
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-7rem)]">
+    <div className="flex flex-col xl:flex-row gap-4 xl:gap-6 h-[calc(100vh-5rem)] xl:h-[calc(100vh-7rem)]">
       {/* Product Grid */}
       <div className="flex-1 flex flex-col min-w-0">
         <div className="flex items-center gap-3 mb-4">
@@ -504,7 +505,7 @@ export default function POSPage() {
               return sections.map((section) => (
                 <div key={section.label} className="mb-4">
                   <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">{section.label}</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                     {section.products.map((product) => <ProductCard key={product.id} product={product} onClick={handleProductClick} shopInfo={shopInfo} t={t} />)}
                   </div>
                 </div>
@@ -512,7 +513,7 @@ export default function POSPage() {
             }
 
             return (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 auto-rows-min">
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 auto-rows-min">
                 {filteredProducts.map((product) => <ProductCard key={product.id} product={product} onClick={handleProductClick} shopInfo={shopInfo} t={t} />)}
               </div>
             )
@@ -520,12 +521,41 @@ export default function POSPage() {
         </div>
       </div>
 
-      {/* Cart */}
-      <Card className="w-80 flex flex-col shrink-0">
+      {/* Floating cart button - mobile/tablet only */}
+      {!showMobileCart && (
+        <button
+          onClick={() => setShowMobileCart(true)}
+          className="xl:hidden fixed bottom-4 right-4 z-30 flex items-center gap-2 bg-brand-600 text-white px-4 py-3 rounded-full shadow-lg hover:bg-brand-700 transition-colors"
+        >
+          <ShoppingCart className="h-5 w-5" />
+          <span className="font-semibold">{formatCurrency(total)}</span>
+          {cart.length > 0 && (
+            <span className="bg-white text-brand-600 text-xs font-bold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1">
+              {cart.reduce((s, i) => s + i.quantity, 0)}
+            </span>
+          )}
+        </button>
+      )}
+
+      {/* Cart - desktop inline, mobile/tablet as overlay */}
+      {showMobileCart && (
+        <div className="xl:hidden fixed inset-0 z-40">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setShowMobileCart(false)} />
+        </div>
+      )}
+      <Card className={cn(
+        'xl:w-80 xl:flex flex-col shrink-0',
+        showMobileCart
+          ? 'fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] rounded-b-none rounded-t-2xl flex'
+          : 'hidden xl:flex'
+      )}>
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
           <ShoppingCart className="h-5 w-5 text-gray-500" />
           <h2 className={cn('font-semibold text-gray-900', lang === 'km' && 'font-khmer')}>{t('pos.cart')}</h2>
           <Badge className="ml-auto">{cart.reduce((s, i) => s + i.quantity, 0)}</Badge>
+          <button onClick={() => setShowMobileCart(false)} className="xl:hidden p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 ml-1">
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
